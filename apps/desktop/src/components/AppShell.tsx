@@ -6,6 +6,7 @@
  */
 
 import { useState, type ReactNode } from "react";
+import { useMonitoringStore } from "@/stores/monitoringStore";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -132,6 +133,7 @@ function PillTabs({
 
 export function AppShell({ children }: AppShellProps) {
     const [activeTab, setActiveTab] = useState<TabId>("dashboard");
+    const monitoringStatus = useMonitoringStore((s) => s.status);
 
     return (
         <div
@@ -155,7 +157,7 @@ export function AppShell({ children }: AppShellProps) {
                     >
                         FlowWatcher
                     </h1>
-                    <StatusBadge />
+                    <StatusBadge status={monitoringStatus.status} />
                 </div>
 
                 <div

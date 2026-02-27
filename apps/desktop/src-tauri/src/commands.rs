@@ -35,19 +35,47 @@ pub async fn get_network_interfaces(
     provider.list_interfaces().map_err(|e| e.to_string())
 }
 
-/// Get current network speed.
+/// Get current network speed by actively polling the network provider.
+///
+/// Creates a SpeedMonitor on first call (establishes baseline).
+/// Subsequent calls compute real download/upload speed from deltas.
 #[tauri::command]
 pub async fn get_current_speed(state: State<'_, AppState>) -> Result<SpeedData, String> {
-    let monitor = state.speed_monitor.lock().await;
-    match monitor.as_ref() {
-        Some(mon) => Ok(SpeedData {
-            download_bps: mon.current_download_speed(),
-            upload_bps: mon.current_upload_speed(),
+    let mut monitor_guard = state.speed_monitor.lock().await;
+    let mut provider = state.network_provider.lock().await;
+
+    // Lazily create a SpeedMonitor if none exists yet.
+    if monitor_guard.is_none() {
+        let iface = provider
+            .get_default_interface()
+            .map_err(|e| e.to_string())?
+            .map(|i| i.id)
+            .unwrap_or_else(|| "unknown".to_string());
+        *monitor_guard = Some(SpeedMonitor::new(iface, 3));
+    }
+
+    let monitor = monitor_guard.as_mut().unwrap();
+
+    // Poll the network provider to get fresh stats and calculate speed.
+    match monitor.poll(&mut *provider) {
+        Ok(Some(reading)) => Ok(SpeedData {
+            download_bps: reading.download_bps,
+            upload_bps: reading.upload_bps,
         }),
-        None => Ok(SpeedData {
-            download_bps: 0,
-            upload_bps: 0,
-        }),
+        Ok(None) => {
+            // First poll (baseline established) — no speed yet.
+            Ok(SpeedData {
+                download_bps: 0,
+                upload_bps: 0,
+            })
+        }
+        Err(e) => {
+            // Return last known speeds if available, else zeros.
+            Ok(SpeedData {
+                download_bps: monitor.current_download_speed(),
+                upload_bps: monitor.current_upload_speed(),
+            })
+        }
     }
 }
 
