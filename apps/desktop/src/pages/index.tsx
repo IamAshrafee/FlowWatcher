@@ -1,16 +1,20 @@
-
 /**
  * Tab page components for FlowWatcher.
  *
  * DashboardPage is the core monitoring UI (Phase 6).
+ * AdvancedPage is the process selection UI (Phase 7).
  * Other pages are placeholders for future phases.
  */
 
+import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { SpeedCard } from "@/components/SpeedCard";
 import { TriggerBuilder } from "@/components/TriggerBuilder";
+import { ProcessList } from "@/components/ProcessList";
+import { ExclusionList } from "@/components/ExclusionList";
 import { useMonitoringStore } from "@/stores/monitoringStore";
-import { useSpeedPolling, useAppInit } from "@/hooks/useTauri";
+import { useProcessStore } from "@/stores/processStore";
+import { useSpeedPolling, useAppInit, useProcesses } from "@/hooks/useTauri";
 
 // ---------------------------------------------------------------------------
 // Dashboard Page (Phase 6)
@@ -139,21 +143,176 @@ export function DashboardPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Advanced Page (Phase 7 placeholder)
+// Advanced Page (Phase 7)
 // ---------------------------------------------------------------------------
 
 export function AdvancedPage() {
+    const { isProcessModeEnabled, toggleProcessMode, watchedProcesses, excludedProcesses } =
+        useProcessStore();
+    const { updateConfig } = useMonitoringStore();
+    const { fetchProcesses } = useProcesses();
+
+    // Fetch processes when page is first shown and mode is enabled.
+    useEffect(() => {
+        if (isProcessModeEnabled) {
+            fetchProcesses();
+        }
+    }, [isProcessModeEnabled]);
+
+    // Sync process mode to monitoring store trigger_type.
+    useEffect(() => {
+        if (isProcessModeEnabled && watchedProcesses.length > 0) {
+            updateConfig({
+                trigger_type: {
+                    type: "process_idle",
+                    watched_processes: watchedProcesses,
+                    excluded_processes: excludedProcesses,
+                    threshold_bytes: 10_240, // 10 KB/s default
+                },
+            });
+        } else if (!isProcessModeEnabled) {
+            updateConfig({
+                trigger_type: {
+                    type: "network_idle",
+                    interface_id: "auto",
+                },
+            });
+        }
+    }, [isProcessModeEnabled, watchedProcesses, excludedProcesses, updateConfig]);
+
     return (
-        <div className="animate-slide-up">
-            <h2
-                className="text-2xl font-bold"
-                style={{ color: "var(--color-text-primary)" }}
+        <div className="animate-slide-up space-y-5">
+            {/* Header + Toggle */}
+            <div
+                className="flex items-center justify-between rounded-lg p-4"
+                style={{
+                    backgroundColor: "var(--color-surface)",
+                    border: "1px solid var(--color-border-subtle)",
+                    boxShadow: "var(--shadow-card)",
+                }}
             >
-                Advanced
-            </h2>
-            <p className="mt-2" style={{ color: "var(--color-text-secondary)" }}>
-                Process monitoring, exclusion lists, and advanced trigger configuration.
-            </p>
+                <div>
+                    <h2
+                        className="text-lg font-semibold"
+                        style={{ color: "var(--color-text-primary)" }}
+                    >
+                        Monitor Specific Applications
+                    </h2>
+                    <p
+                        className="mt-0.5 text-sm"
+                        style={{ color: "var(--color-text-secondary)" }}
+                    >
+                        Select apps to monitor instead of global network activity.
+                    </p>
+                </div>
+
+                {/* Toggle switch */}
+                <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isProcessModeEnabled}
+                    onClick={() => {
+                        toggleProcessMode();
+                        if (!isProcessModeEnabled) {
+                            fetchProcesses();
+                        }
+                    }}
+                    className="relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors"
+                    style={{
+                        backgroundColor: isProcessModeEnabled
+                            ? "var(--color-accent)"
+                            : "var(--color-border-default)",
+                        cursor: "pointer",
+                        border: "none",
+                    }}
+                >
+                    <span
+                        className="inline-block h-5 w-5 transform rounded-full transition-transform"
+                        style={{
+                            backgroundColor: "white",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                            transform: isProcessModeEnabled
+                                ? "translateX(22px) translateY(2px)"
+                                : "translateX(2px) translateY(2px)",
+                        }}
+                    />
+                </button>
+            </div>
+
+            {/* Content: shown only when enabled */}
+            {isProcessModeEnabled ? (
+                <div className="space-y-5 animate-fade-in">
+                    {/* Refresh button */}
+                    <div className="flex justify-end">
+                        <button
+                            type="button"
+                            onClick={fetchProcesses}
+                            className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                            style={{
+                                backgroundColor: "var(--color-surface)",
+                                color: "var(--color-text-secondary)",
+                                border: "1px solid var(--color-border-default)",
+                                cursor: "pointer",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor =
+                                    "var(--color-accent)";
+                                e.currentTarget.style.color =
+                                    "var(--color-accent)";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor =
+                                    "var(--color-border-default)";
+                                e.currentTarget.style.color =
+                                    "var(--color-text-secondary)";
+                            }}
+                        >
+                            ↻ Refresh
+                        </button>
+                    </div>
+
+                    {/* Process list */}
+                    <div
+                        className="rounded-lg p-4"
+                        style={{
+                            backgroundColor: "var(--color-surface)",
+                            border: "1px solid var(--color-border-subtle)",
+                            boxShadow: "var(--shadow-card)",
+                        }}
+                    >
+                        <ProcessList />
+                    </div>
+
+                    {/* Exclusion list */}
+                    <div
+                        className="rounded-lg p-4"
+                        style={{
+                            backgroundColor: "var(--color-surface)",
+                            border: "1px solid var(--color-border-subtle)",
+                            boxShadow: "var(--shadow-card)",
+                        }}
+                    >
+                        <ExclusionList />
+                    </div>
+                </div>
+            ) : (
+                <div
+                    className="rounded-lg p-6 text-center animate-fade-in"
+                    style={{
+                        backgroundColor: "var(--color-surface)",
+                        border: "1px solid var(--color-border-subtle)",
+                    }}
+                >
+                    <p
+                        className="text-sm"
+                        style={{ color: "var(--color-text-muted)" }}
+                    >
+                        Enable the toggle above to select specific applications to
+                        monitor. When disabled, FlowWatcher monitors global network
+                        activity.
+                    </p>
+                </div>
+            )}
         </div>
     );
 }
