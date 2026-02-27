@@ -18,6 +18,8 @@ import { useMonitoringStore } from "@/stores/monitoringStore";
 import { useProcessStore } from "@/stores/processStore";
 import { useSpeedPolling, useAppInit, useProcesses } from "@/hooks/useTauri";
 import { useCountdown } from "@/hooks/useCountdown";
+import { useSettingsStore } from "@/stores/settingsStore";
+import { useTheme } from "@/components/ThemeProvider";
 import type { LogEntry } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -626,21 +628,326 @@ export function LogsPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Settings Page (Phase 9 placeholder)
+// Settings Page (Phase 10)
 // ---------------------------------------------------------------------------
 
 export function SettingsPage() {
+    const { settings, updateSettings, loadSettings, resetDefaults } =
+        useSettingsStore();
+    const { setTheme } = useTheme();
+
+    // Load settings on mount.
+    useEffect(() => {
+        loadSettings();
+    }, []);
+
+    // Wire theme changes to ThemeProvider.
+    function handleThemeChange(theme: "dark" | "light" | "auto") {
+        updateSettings({ theme });
+        setTheme(theme);
+    }
+
+    async function handleClearLogs() {
+        try {
+            await invoke("clear_activity_logs");
+            alert("Activity logs cleared.");
+        } catch {
+            // Silent fail.
+        }
+    }
+
+    async function handleResetSettings() {
+        if (!confirm("Reset all settings to defaults? This cannot be undone.")) {
+            return;
+        }
+        await resetDefaults();
+        setTheme("dark");
+        alert("Settings reset to defaults.");
+    }
+
     return (
-        <div className="animate-slide-up">
-            <h2
-                className="text-2xl font-bold"
-                style={{ color: "var(--color-text-primary)" }}
-            >
-                Settings
-            </h2>
-            <p className="mt-2" style={{ color: "var(--color-text-secondary)" }}>
-                Theme, language, auto-start, and notification preferences.
-            </p>
+        <div className="animate-slide-up space-y-4">
+            {/* Header */}
+            <div>
+                <h2
+                    className="text-lg font-semibold"
+                    style={{ color: "var(--color-text-primary)" }}
+                >
+                    Settings
+                </h2>
+                <p
+                    className="text-sm"
+                    style={{ color: "var(--color-text-secondary)" }}
+                >
+                    Customize app behavior and appearance.
+                </p>
+            </div>
+
+            {/* Appearance */}
+            <SettingsSection title="Appearance">
+                <SettingsRow label="Theme" description="Choose your preferred color scheme.">
+                    <div className="flex gap-1 rounded-lg p-0.5" style={{
+                        backgroundColor: "rgba(255,255,255,0.04)",
+                        border: "1px solid var(--color-border-subtle)",
+                    }}>
+                        {(["dark", "light", "auto"] as const).map((t) => (
+                            <button
+                                key={t}
+                                type="button"
+                                onClick={() => handleThemeChange(t)}
+                                className="rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-all"
+                                style={{
+                                    backgroundColor:
+                                        settings.theme === t
+                                            ? "var(--color-accent)"
+                                            : "transparent",
+                                    color:
+                                        settings.theme === t
+                                            ? "#fff"
+                                            : "var(--color-text-secondary)",
+                                    cursor: "pointer",
+                                    border: "none",
+                                }}
+                            >
+                                {t === "auto" ? "Auto" : t === "dark" ? "🌙 Dark" : "☀️ Light"}
+                            </button>
+                        ))}
+                    </div>
+                </SettingsRow>
+                <SettingsRow label="Language" description="Display language (coming soon).">
+                    <span
+                        className="text-xs"
+                        style={{ color: "var(--color-text-muted)" }}
+                    >
+                        English
+                    </span>
+                </SettingsRow>
+            </SettingsSection>
+
+            {/* Behavior */}
+            <SettingsSection title="Behavior">
+                <SettingsRow label="Auto-Start" description="Launch FlowWatcher when Windows starts.">
+                    <ToggleSwitch
+                        checked={settings.auto_start}
+                        onChange={(v) => updateSettings({ auto_start: v })}
+                    />
+                </SettingsRow>
+                <SettingsRow label="Keep Screen On" description="Prevent display sleep while monitoring.">
+                    <ToggleSwitch
+                        checked={settings.keep_screen_on}
+                        onChange={(v) => updateSettings({ keep_screen_on: v })}
+                    />
+                </SettingsRow>
+                <SettingsRow label="Auto-Save" description="Save settings automatically on change.">
+                    <ToggleSwitch
+                        checked={settings.auto_save}
+                        onChange={(v) => updateSettings({ auto_save: v })}
+                    />
+                </SettingsRow>
+                <SettingsRow label="Notifications" description="Show toast for pre-warning and post-action.">
+                    <ToggleSwitch
+                        checked={settings.show_notifications}
+                        onChange={(v) => updateSettings({ show_notifications: v })}
+                    />
+                </SettingsRow>
+            </SettingsSection>
+
+            {/* Delays */}
+            <SettingsSection title="Delays">
+                <SettingsRow
+                    label="Pre-Action Delay"
+                    description="Minutes to wait after trigger detection before starting countdown."
+                >
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="number"
+                            min={0}
+                            max={60}
+                            value={settings.pre_action_delay_mins}
+                            onChange={(e) =>
+                                updateSettings({
+                                    pre_action_delay_mins: Math.max(
+                                        0,
+                                        Math.min(60, parseInt(e.target.value) || 0),
+                                    ),
+                                })
+                            }
+                            className="w-16 rounded-md px-2 py-1 text-sm text-center"
+                            style={{
+                                backgroundColor: "var(--color-surface)",
+                                color: "var(--color-text-primary)",
+                                border: "1px solid var(--color-border-default)",
+                                outline: "none",
+                            }}
+                        />
+                        <span
+                            className="text-xs"
+                            style={{ color: "var(--color-text-muted)" }}
+                        >
+                            min
+                        </span>
+                    </div>
+                </SettingsRow>
+            </SettingsSection>
+
+            {/* Data */}
+            <SettingsSection title="Data">
+                <div className="flex gap-2 pt-1">
+                    <button
+                        type="button"
+                        onClick={handleClearLogs}
+                        className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                        style={{
+                            backgroundColor: "var(--color-surface)",
+                            color: "var(--color-warning)",
+                            border: "1px solid var(--color-border-default)",
+                            cursor: "pointer",
+                        }}
+                    >
+                        Clear All Logs
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleResetSettings}
+                        className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                        style={{
+                            backgroundColor: "var(--color-surface)",
+                            color: "#EF5350",
+                            border: "1px solid var(--color-border-default)",
+                            cursor: "pointer",
+                        }}
+                    >
+                        Reset to Defaults
+                    </button>
+                </div>
+            </SettingsSection>
+
+            {/* About */}
+            <SettingsSection title="About">
+                <SettingsRow label="Version" description="Current application version.">
+                    <span
+                        className="text-xs font-mono"
+                        style={{ color: "var(--color-text-muted)" }}
+                    >
+                        v0.1.0-dev
+                    </span>
+                </SettingsRow>
+                <SettingsRow label="Repository" description="View source code on GitHub.">
+                    <a
+                        href="https://github.com/IamAshrafee/FlowWatcher"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs underline"
+                        style={{ color: "var(--color-accent)" }}
+                    >
+                        github.com/IamAshrafee/FlowWatcher
+                    </a>
+                </SettingsRow>
+                <SettingsRow label="License" description="Open-source license.">
+                    <span
+                        className="text-xs"
+                        style={{ color: "var(--color-text-muted)" }}
+                    >
+                        MIT License
+                    </span>
+                </SettingsRow>
+            </SettingsSection>
         </div>
     );
 }
+
+// ---------------------------------------------------------------------------
+// Settings helper components
+// ---------------------------------------------------------------------------
+
+function SettingsSection({
+    title,
+    children,
+}: {
+    title: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div
+            className="rounded-lg p-4 space-y-3"
+            style={{
+                backgroundColor: "var(--color-surface)",
+                border: "1px solid var(--color-border-subtle)",
+                boxShadow: "var(--shadow-card)",
+            }}
+        >
+            <h3
+                className="text-sm font-semibold uppercase tracking-wider"
+                style={{ color: "var(--color-text-muted)" }}
+            >
+                {title}
+            </h3>
+            {children}
+        </div>
+    );
+}
+
+function SettingsRow({
+    label,
+    description,
+    children,
+}: {
+    label: string;
+    description: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div className="flex items-center justify-between py-1">
+            <div>
+                <p
+                    className="text-sm font-medium"
+                    style={{ color: "var(--color-text-primary)" }}
+                >
+                    {label}
+                </p>
+                <p
+                    className="text-xs"
+                    style={{ color: "var(--color-text-muted)" }}
+                >
+                    {description}
+                </p>
+            </div>
+            <div className="shrink-0 ml-4">{children}</div>
+        </div>
+    );
+}
+
+function ToggleSwitch({
+    checked,
+    onChange,
+}: {
+    checked: boolean;
+    onChange: (value: boolean) => void;
+}) {
+    return (
+        <button
+            type="button"
+            role="switch"
+            aria-checked={checked}
+            onClick={() => onChange(!checked)}
+            className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors"
+            style={{
+                backgroundColor: checked
+                    ? "var(--color-accent)"
+                    : "rgba(255,255,255,0.1)",
+                cursor: "pointer",
+                border: "none",
+            }}
+        >
+            <span
+                className="inline-block h-3.5 w-3.5 rounded-full transition-transform"
+                style={{
+                    backgroundColor: "#fff",
+                    transform: checked ? "translateX(18px)" : "translateX(2px)",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                }}
+            />
+        </button>
+    );
+}
+

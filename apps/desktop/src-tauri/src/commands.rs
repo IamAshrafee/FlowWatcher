@@ -9,7 +9,7 @@ use flowwatcher_engine::SpeedMonitor;
 use flowwatcher_platform::network::{InterfaceInfo, NetworkProvider};
 use flowwatcher_platform::process::{ProcessInfo, ProcessProvider};
 use serde::{Deserialize, Serialize};
-use tauri::State;
+use tauri::{Manager, State};
 
 // ---------------------------------------------------------------------------
 // Response types
@@ -319,6 +319,72 @@ pub async fn export_activity_logs(
         "txt" => Ok(logger.export_txt()),
         _ => logger.export_json().map_err(|e| e.to_string()),
     }
+}
+
+// ---------------------------------------------------------------------------
+// Settings commands
+// ---------------------------------------------------------------------------
+
+/// Get user settings from JSON file, or return defaults.
+#[tauri::command]
+pub async fn get_settings(app: tauri::AppHandle) -> Result<serde_json::Value, String> {
+    let path = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("settings.json");
+
+    if path.exists() {
+        let data = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+        serde_json::from_str(&data).map_err(|e| e.to_string())
+    } else {
+        // Return default settings.
+        Ok(serde_json::json!({
+            "language": "en",
+            "theme": "dark",
+            "auto_start": false,
+            "minimize_to_tray": false,
+            "show_notifications": true,
+            "auto_save": true,
+            "pre_action_delay_mins": 0,
+            "keep_screen_on": false,
+            "default_config": null
+        }))
+    }
+}
+
+/// Save user settings to JSON file.
+#[tauri::command]
+pub async fn save_settings(
+    app: tauri::AppHandle,
+    settings: serde_json::Value,
+) -> Result<(), String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?;
+
+    // Ensure directory exists.
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+
+    let path = dir.join("settings.json");
+    let json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| e.to_string())
+}
+
+/// Reset settings by deleting the file.
+#[tauri::command]
+pub async fn reset_settings(app: tauri::AppHandle) -> Result<(), String> {
+    let path = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("settings.json");
+
+    if path.exists() {
+        std::fs::remove_file(&path).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 /// Trigger type metadata for frontend display.

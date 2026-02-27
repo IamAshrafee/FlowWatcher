@@ -133,14 +133,20 @@ export interface PreWarningEvent {
 export interface AppSettings {
     /** Language code (e.g., "en", "bn"). */
     language: string;
-    /** Theme: "dark" or "light". */
-    theme: "dark" | "light";
+    /** Theme: "dark", "light", or "auto". */
+    theme: "dark" | "light" | "auto";
     /** Start with Windows. */
     auto_start: boolean;
     /** Minimize to tray on close. */
     minimize_to_tray: boolean;
     /** Show desktop notification before action. */
     show_notifications: boolean;
+    /** Auto-save settings on every change. */
+    auto_save: boolean;
+    /** Minutes to wait after detection before countdown. */
+    pre_action_delay_mins: number;
+    /** Keep screen on during monitoring. */
+    keep_screen_on: boolean;
     /** Default monitoring config. */
     default_config: MonitoringConfig | null;
 }
