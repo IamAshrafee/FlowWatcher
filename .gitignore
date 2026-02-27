@@ -7,10 +7,9 @@ debug/
 target/
 **/*.rs.bk
 *.pdb
-Cargo.lock
-# NOTE: Cargo.lock should be tracked for binary crates (apps/desktop/src-tauri/).
-# Uncomment the line above if using workspace-level lock, or remove if tracking it.
-# For libraries (core/), Cargo.lock is typically NOT committed.
+# Only ignore Cargo.lock for the library workspace (core/).
+# The Tauri binary crate (apps/desktop/src-tauri/) tracks its Cargo.lock for reproducible builds.
+core/Cargo.lock
 
 # ------ Node / Frontend ------
 node_modules/
