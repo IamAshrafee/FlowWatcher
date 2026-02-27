@@ -487,6 +487,10 @@ Users can toggle on process monitoring, search/select specific apps, see smart s
 - **`shadcn-ui`** — For Switch toggles, ScrollArea, searchable checklists, Badge components.
 - **`vercel-react-best-practices`** — For virtualized lists if process count is large, and efficient search/filter patterns.
 
+### Deferred Items (from earlier phases)
+- [From Phase 2] **PlayAlarmAction** — Audio playback via `rodio` crate. The `Action` trait is ready; needs `rodio` dependency + `PlayAlarmAction` implementation in `core/platform/src/actions.rs`.
+- [From Phase 3] **Combined trigger logic** (global network idle + per-process idle) — The `ProcessTrigger` and `ThresholdCondition` exist independently; they need orchestration into a single monitoring loop.
+
 ## Depends On
 Phase 3 (process monitoring engine), Phase 6 (dashboard).
 
@@ -531,6 +535,10 @@ When the trigger fires, the user gets a 1-minute warning, then a highly visible 
 - **`shadcn-ui`** — For Dialog (overlay countdown), Toast (pre-warning notifications), Button variants (cancel/execute).
 - **`tauri-v2`** — For bringing the window to front, native OS notifications.
 
+### Deferred Items (from earlier phases)
+- [From Phase 4] **Event streaming runtime (`app.emit()`)** — Background polling loop that emits `speed-update`, `monitoring-state-change`, `countdown-tick`, `pre-warning` events via Tauri. The `ActionScheduler` already produces events; they need wiring to `app.emit()` + a tokio background task in `setup()`.
+- [From Phase 1] **`NetworkIdleTrigger` struct** — Concrete trigger combining `SpeedMonitor` + `ThresholdCondition` into a single `Trigger` trait impl. Building blocks exist; needs the orchestration loop.
+
 ## Depends On
 Phase 2 (action scheduler), Phase 6 (dashboard).
 
@@ -566,6 +574,9 @@ Every monitoring session is logged. Users can view, filter, export, and clear th
 ## Skills to Use
 - **`shadcn-ui`** — For Table component (log display), Input (search/filter), Button (export actions).
 - **`rust-best-practices`** — For clean serialization patterns (`serde`) and file I/O in the Rust logging engine.
+
+### Deferred Items (from earlier phases)
+- [From Phase 4] **`get_activity_logs` Tauri command** — Requires the persistence layer. Skeleton TypeScript types (`LogEntry`) are already defined in `src/types/index.ts`.
 
 ## Depends On
 Phase 4 (Tauri bridge), Phase 5 (design system).
@@ -609,6 +620,11 @@ All user preferences persist across sessions. The Settings tab is clean and orga
 - **`shadcn-ui`** — For Switch, Select, Slider, Input, Accordion, and Dialog components in the settings UI.
 - **`tauri-v2`** — For `tauri-plugin-autostart`, `tauri-plugin-fs` (file picker for custom alarm), and `tauri-plugin-store` (key-value persistence).
 
+### Deferred Items (from earlier phases)
+- [From Phase 4] **`get_settings` / `save_settings` Tauri commands** — Requires JSON file persistence in Tauri's `app_data_dir`. Skeleton TypeScript types (`AppSettings`) are defined in `src/types/index.ts`.
+- [From Phase 6] **Play Alarm action in UI** — The action dropdown currently shows 6 system actions. `PlayAlarmAction` needs `rodio` backend (see Phase 7 deferred) + an entry in `get_available_actions()` + optional custom sound file picker.
+- [From Phase 0] **ShadCN UI components** — Deferred due to Tailwind v4 incompatibility. Use `shadcn@canary` or continue with custom components. Decision needed here.
+
 ## Depends On
 Phase 4, Phase 5.
 
@@ -646,6 +662,10 @@ User clicks "Start Monitoring", closes the window. The app minimizes to the syst
 
 ## Skills to Use
 - **`tauri-v2`** — For system tray plugin, tray menu configuration, window show/hide commands, and close-intercept behavior.
+
+### Deferred Items (from earlier phases)
+- [From Phase 5] **Custom Titlebar** (`decorations: false` in Tauri config) — Replace default OS decorations with a custom titlebar that includes window minimize/maximize/close buttons. The Tauri drag region is already set up in `AppShell.tsx`.
+- [From Phase 4] **Tauri tray capabilities** — Permission plugins for system tray need to be added to the Tauri capabilities config.
 
 ## Depends On
 Phase 6 (dashboard must exist to restore to).
@@ -764,6 +784,10 @@ The app runs for hours without memory leaks or CPU spikes. Edge cases are handle
 - **`rust-best-practices`** — For performance profiling patterns, memory-safe cleanup, and clippy perf lints.
 - **`vercel-react-best-practices`** — For React render optimization, lazy loading, debouncing UI updates, and bundle analysis.
 - **`tauri-v2`** — For platform API calls (keep screen on, window management edge cases).
+
+### Deferred Items (from earlier phases)
+- [From Phase 3] **True per-process network usage via ETW** — Currently using disk I/O as a proxy. Event Tracing for Windows (ETW) would provide accurate per-process network bytes. Complex to implement; evaluate if the proxy is "good enough" or upgrade is needed.
+- [From Phase 4] **Tauri auto-start capability** — Permission plugin for `tauri-plugin-autostart` needs to be registered in capabilities config.
 
 ## Depends On
 All prior phases.
