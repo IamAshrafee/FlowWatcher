@@ -1,7 +1,7 @@
 //! Tauri command handlers — the bridge between frontend and core engine.
 
 use crate::state::{
-    AppState, ConditionConfig, MonitoringConfig, MonitoringStatus, TriggerConfig,
+    AppState, MonitoringConfig, MonitoringStatus, TriggerConfig,
 };
 use flowwatcher_actions::ActionInfo;
 use flowwatcher_conditions::{MonitorMode, ThresholdCondition};
