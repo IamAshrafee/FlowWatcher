@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+flowwatcher-platform = { path = "../platform" }
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 async-trait = "0.1"

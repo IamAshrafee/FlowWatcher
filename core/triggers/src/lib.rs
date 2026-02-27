@@ -16,6 +16,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use thiserror::Error;
 
+pub mod process;
+pub use process::ProcessTrigger;
+
 // ---------------------------------------------------------------------------
 // Error types
 // ---------------------------------------------------------------------------
