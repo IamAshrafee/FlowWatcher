@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -39,6 +40,7 @@ export function CountdownDialog({
     onExecuteNow,
     isOpen,
 }: CountdownDialogProps) {
+    const { t } = useTranslation();
     // Esc key to cancel.
     const handleKeyDown = useCallback(
         (e: KeyboardEvent) => {
@@ -205,7 +207,7 @@ export function CountdownDialog({
                             "0 4px 20px rgba(58, 186, 180, 0.3)";
                     }}
                 >
-                    Cancel
+                    {t("countdown.cancel")}
                 </button>
 
                 {/* Execute Now — subtle secondary */}
@@ -231,7 +233,7 @@ export function CountdownDialog({
                         e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
                     }}
                 >
-                    Execute Now
+                    {t("countdown.executeNow")}
                 </button>
 
                 {/* Esc hint */}
@@ -242,7 +244,7 @@ export function CountdownDialog({
                         marginTop: "8px",
                     }}
                 >
-                    Press <kbd style={{ fontFamily: "monospace" }}>Esc</kbd> to cancel
+                    {t("countdown.escToCancel", { defaultValue: "Press Esc to cancel" })}
                 </p>
             </div>
         </div>

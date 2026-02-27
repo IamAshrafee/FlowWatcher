@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { SpeedCard } from "@/components/SpeedCard";
@@ -28,6 +29,7 @@ import type { LogEntry } from "@/types";
 // ---------------------------------------------------------------------------
 
 export function DashboardPage() {
+    const { t } = useTranslation();
     const { currentSpeed, speedHistory, interfaceName, status, config, setStatus } =
         useMonitoringStore();
     const isMonitoring = status.status === "Monitoring";
@@ -102,14 +104,14 @@ export function DashboardPage() {
             {/* Speed cards */}
             <div className="grid grid-cols-2 gap-4">
                 <SpeedCard
-                    label="Download"
+                    label={t("dashboard.download")}
                     bps={currentSpeed.download_bps}
                     icon="download"
                     history={speedHistory.map((s) => s.download_bps)}
                     interfaceName={interfaceName}
                 />
                 <SpeedCard
-                    label="Upload"
+                    label={t("dashboard.upload")}
                     bps={currentSpeed.upload_bps}
                     icon="upload"
                     history={speedHistory.map((s) => s.upload_bps)}
@@ -155,7 +157,7 @@ export function DashboardPage() {
                         style={{ backgroundColor: "var(--color-accent)" }}
                     />
                 )}
-                {isMonitoring ? "Stop Monitoring" : "Start Monitoring"}
+                {isMonitoring ? t("dashboard.stopMonitoring") : t("dashboard.startMonitoring")}
             </button>
 
             {/* Status indicator */}
@@ -175,13 +177,13 @@ export function DashboardPage() {
                     }}
                 >
                     {status.status === "Monitoring" &&
-                        "Monitoring network activity..."}
+                        t("dashboard.statusMonitoring")}
                     {status.status === "TriggerPending" &&
-                        "Trigger condition detected — preparing action..."}
+                        t("dashboard.statusTriggerPending")}
                     {status.status === "Countdown" &&
-                        `Action in ${status.data.remaining_secs} seconds...`}
-                    {status.status === "Executed" && "Action executed successfully."}
-                    {status.status === "Paused" && "Monitoring paused."}
+                        t("dashboard.statusCountdown", { seconds: status.data.remaining_secs })}
+                    {status.status === "Executed" && t("dashboard.statusExecuted")}
+                    {status.status === "Paused" && t("dashboard.statusPaused")}
                 </div>
             )}
 
@@ -206,7 +208,7 @@ export function DashboardPage() {
                             "rgba(255, 183, 77, 0.06)";
                     }}
                 >
-                    ⚠ Simulate Trigger (Test Safety UI)
+                    {t("dashboard.simulateTrigger")}
                 </button>
             )}
 
@@ -231,6 +233,7 @@ export function DashboardPage() {
 // ---------------------------------------------------------------------------
 
 export function AdvancedPage() {
+    const { t } = useTranslation();
     const { isProcessModeEnabled, toggleProcessMode, watchedProcesses, excludedProcesses } =
         useProcessStore();
     const { updateConfig } = useMonitoringStore();
@@ -280,13 +283,13 @@ export function AdvancedPage() {
                         className="text-lg font-semibold"
                         style={{ color: "var(--color-text-primary)" }}
                     >
-                        Monitor Specific Applications
+                        {t("advanced.title")}
                     </h2>
                     <p
                         className="mt-0.5 text-sm"
                         style={{ color: "var(--color-text-secondary)" }}
                     >
-                        Select apps to monitor instead of global network activity.
+                        {t("advanced.description")}
                     </p>
                 </div>
 
@@ -351,7 +354,7 @@ export function AdvancedPage() {
                                     "var(--color-text-secondary)";
                             }}
                         >
-                            ↻ Refresh
+                            {t("advanced.refresh")}
                         </button>
                     </div>
 
@@ -391,9 +394,7 @@ export function AdvancedPage() {
                         className="text-sm"
                         style={{ color: "var(--color-text-muted)" }}
                     >
-                        Enable the toggle above to select specific applications to
-                        monitor. When disabled, FlowWatcher monitors global network
-                        activity.
+                        {t("advanced.disabledMessage")}
                     </p>
                 </div>
             )}
@@ -406,6 +407,7 @@ export function AdvancedPage() {
 // ---------------------------------------------------------------------------
 
 export function LogsPage() {
+    const { t } = useTranslation();
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [search, setSearch] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -442,9 +444,9 @@ export function LogsPage() {
             // Copy to clipboard as a simple export mechanism.
             await navigator.clipboard.writeText(data as string);
             // Use inline feedback instead of toast (toast is mounted in Dashboard).
-            alert(`Logs exported as ${format.toUpperCase()} and copied to clipboard.`);
+            alert(t("logs.exportSuccess", { format: format.toUpperCase() }));
         } catch {
-            alert("Export failed.");
+            alert(t("logs.exportFailed"));
         }
     }
 
@@ -462,10 +464,10 @@ export function LogsPage() {
     const sorted = [...filtered].reverse();
 
     const STATUS_BADGES: Record<string, { icon: string; color: string; label: string }> = {
-        executed: { icon: "✅", color: "#66BB6A", label: "Executed" },
-        cancelled: { icon: "❌", color: "var(--color-warning)", label: "Cancelled" },
-        error: { icon: "⚠️", color: "#FFB74D", label: "Error" },
-        info: { icon: "ℹ", color: "var(--color-accent)", label: "Info" },
+        executed: { icon: "✅", color: "#66BB6A", label: t("logs.statusExecuted") },
+        cancelled: { icon: "❌", color: "var(--color-warning)", label: t("logs.statusCancelled") },
+        error: { icon: "⚠️", color: "#FFB74D", label: t("logs.statusError") },
+        info: { icon: "ℹ", color: "var(--color-accent)", label: t("logs.statusInfo") },
     };
 
     return (
@@ -477,13 +479,13 @@ export function LogsPage() {
                         className="text-lg font-semibold"
                         style={{ color: "var(--color-text-primary)" }}
                     >
-                        Activity Logs
+                        {t("logs.title")}
                     </h2>
                     <p
                         className="text-sm"
                         style={{ color: "var(--color-text-secondary)" }}
                     >
-                        {logs.length} event{logs.length !== 1 ? "s" : ""} recorded
+                        {t("logs.eventCount", { count: logs.length })}
                     </p>
                 </div>
                 <button
@@ -497,14 +499,14 @@ export function LogsPage() {
                         cursor: "pointer",
                     }}
                 >
-                    ↻ Refresh
+                    {t("logs.refresh")}
                 </button>
             </div>
 
             {/* Search bar */}
             <input
                 type="text"
-                placeholder="Search logs..."
+                placeholder={t("logs.searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full rounded-lg px-4 py-2.5 text-sm"
@@ -541,10 +543,10 @@ export function LogsPage() {
                         backgroundColor: "rgba(255,255,255,0.02)",
                     }}
                 >
-                    <span>Date/Time</span>
-                    <span>Trigger</span>
-                    <span>Action</span>
-                    <span>Status</span>
+                    <span>{t("logs.colDateTime")}</span>
+                    <span>{t("logs.colTrigger")}</span>
+                    <span>{t("logs.colAction")}</span>
+                    <span>{t("logs.colStatus")}</span>
                 </div>
 
                 {/* Table body */}
@@ -554,7 +556,7 @@ export function LogsPage() {
                             className="p-6 text-center text-sm"
                             style={{ color: "var(--color-text-muted)" }}
                         >
-                            Loading...
+                            {t("logs.loading")}
                         </p>
                     ) : sorted.length === 0 ? (
                         <p
@@ -562,8 +564,8 @@ export function LogsPage() {
                             style={{ color: "var(--color-text-muted)" }}
                         >
                             {search
-                                ? "No matching log entries."
-                                : "No activity logged yet. Start monitoring to see events here."}
+                                ? t("logs.noMatch")
+                                : t("logs.emptyState")}
                         </p>
                     ) : (
                         sorted.map((entry, i) => {
@@ -621,7 +623,7 @@ export function LogsPage() {
                         opacity: logs.length > 0 ? 1 : 0.5,
                     }}
                 >
-                    Clear Logs
+                    {t("logs.clearLogs")}
                 </button>
                 <button
                     type="button"
@@ -636,7 +638,7 @@ export function LogsPage() {
                         opacity: logs.length > 0 ? 1 : 0.5,
                     }}
                 >
-                    Export JSON
+                    {t("logs.exportJSON")}
                 </button>
                 <button
                     type="button"
@@ -651,7 +653,7 @@ export function LogsPage() {
                         opacity: logs.length > 0 ? 1 : 0.5,
                     }}
                 >
-                    Export TXT
+                    {t("logs.exportTXT")}
                 </button>
             </div>
         </div>
@@ -663,6 +665,7 @@ export function LogsPage() {
 // ---------------------------------------------------------------------------
 
 export function SettingsPage() {
+    const { t, i18n } = useTranslation();
     const { settings, updateSettings, loadSettings, resetDefaults } =
         useSettingsStore();
     const { setTheme } = useTheme();
@@ -688,13 +691,17 @@ export function SettingsPage() {
     }
 
     async function handleResetSettings() {
-        if (!confirm("Reset all settings to defaults? This cannot be undone.")) {
+        if (!confirm(t("settings.resetConfirm"))) {
             return;
         }
         await resetDefaults();
         setTheme("dark");
-        alert("Settings reset to defaults.");
+        alert(t("settings.resetSuccess"));
     }
+
+    const LANGUAGE_OPTIONS = [
+        { code: "en", label: "English" },
+    ];
 
     return (
         <div className="animate-slide-up space-y-4">
@@ -704,66 +711,82 @@ export function SettingsPage() {
                     className="text-lg font-semibold"
                     style={{ color: "var(--color-text-primary)" }}
                 >
-                    Settings
+                    {t("settings.title")}
                 </h2>
                 <p
                     className="text-sm"
                     style={{ color: "var(--color-text-secondary)" }}
                 >
-                    Customize app behavior and appearance.
+                    {t("settings.subtitle")}
                 </p>
             </div>
 
             {/* Appearance */}
-            <SettingsSection title="Appearance">
-                <SettingsRow label="Theme" description="Choose your preferred color scheme.">
+            <SettingsSection title={t("settings.appearance")}>
+                <SettingsRow label={t("settings.themeLabel")} description={t("settings.themeDescription")}>
                     <div className="flex gap-1 rounded-lg p-0.5" style={{
                         backgroundColor: "rgba(255,255,255,0.04)",
                         border: "1px solid var(--color-border-subtle)",
                     }}>
-                        {(["dark", "light", "auto"] as const).map((t) => (
+                        {(["dark", "light", "auto"] as const).map((themeValue) => (
                             <button
-                                key={t}
+                                key={themeValue}
                                 type="button"
-                                onClick={() => handleThemeChange(t)}
+                                onClick={() => handleThemeChange(themeValue)}
                                 className="rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-all"
                                 style={{
                                     backgroundColor:
-                                        settings.theme === t
+                                        settings.theme === themeValue
                                             ? "var(--color-accent)"
                                             : "transparent",
                                     color:
-                                        settings.theme === t
+                                        settings.theme === themeValue
                                             ? "#fff"
                                             : "var(--color-text-secondary)",
                                     cursor: "pointer",
                                     border: "none",
                                 }}
                             >
-                                {t === "auto" ? "Auto" : t === "dark" ? "🌙 Dark" : "☀️ Light"}
+                                {themeValue === "auto" ? t("settings.themeAuto") : themeValue === "dark" ? t("settings.themeDark") : t("settings.themeLight")}
                             </button>
                         ))}
                     </div>
                 </SettingsRow>
-                <SettingsRow label="Language" description="Display language (coming soon).">
-                    <span
-                        className="text-xs"
-                        style={{ color: "var(--color-text-muted)" }}
+                <SettingsRow label={t("settings.languageLabel")} description={t("settings.languageDescription")}>
+                    <select
+                        value={settings.language || "en"}
+                        onChange={(e) => {
+                            const lang = e.target.value;
+                            updateSettings({ language: lang });
+                            i18n.changeLanguage(lang);
+                        }}
+                        className="rounded-md px-2 py-1 text-xs"
+                        style={{
+                            backgroundColor: "var(--color-surface)",
+                            color: "var(--color-text-primary)",
+                            border: "1px solid var(--color-border-default)",
+                            cursor: "pointer",
+                            outline: "none",
+                        }}
                     >
-                        English
-                    </span>
+                        {LANGUAGE_OPTIONS.map((lang) => (
+                            <option key={lang.code} value={lang.code}>
+                                {lang.label}
+                            </option>
+                        ))}
+                    </select>
                 </SettingsRow>
             </SettingsSection>
 
             {/* Behavior */}
-            <SettingsSection title="Behavior">
-                <SettingsRow label="Auto-Start" description="Launch FlowWatcher when Windows starts.">
+            <SettingsSection title={t("settings.behavior")}>
+                <SettingsRow label={t("settings.autoStartLabel")} description={t("settings.autoStartDescription")}>
                     <ToggleSwitch
                         checked={settings.auto_start}
                         onChange={(v) => updateSettings({ auto_start: v })}
                     />
                 </SettingsRow>
-                <SettingsRow label="Minimize to Tray" description="Hide to system tray instead of exiting when closing window.">
+                <SettingsRow label={t("settings.minimizeToTrayLabel")} description={t("settings.minimizeToTrayDescription")}>
                     <ToggleSwitch
                         checked={settings.minimize_to_tray}
                         onChange={async (v) => {
@@ -776,19 +799,19 @@ export function SettingsPage() {
                         }}
                     />
                 </SettingsRow>
-                <SettingsRow label="Keep Screen On" description="Prevent display sleep while monitoring.">
+                <SettingsRow label={t("settings.keepScreenOnLabel")} description={t("settings.keepScreenOnDescription")}>
                     <ToggleSwitch
                         checked={settings.keep_screen_on}
                         onChange={(v) => updateSettings({ keep_screen_on: v })}
                     />
                 </SettingsRow>
-                <SettingsRow label="Auto-Save" description="Save settings automatically on change.">
+                <SettingsRow label={t("settings.autoSaveLabel")} description={t("settings.autoSaveDescription")}>
                     <ToggleSwitch
                         checked={settings.auto_save}
                         onChange={(v) => updateSettings({ auto_save: v })}
                     />
                 </SettingsRow>
-                <SettingsRow label="Notifications" description="Show toast for pre-warning and post-action.">
+                <SettingsRow label={t("settings.notificationsLabel")} description={t("settings.notificationsDescription")}>
                     <ToggleSwitch
                         checked={settings.show_notifications}
                         onChange={(v) => updateSettings({ show_notifications: v })}
@@ -797,10 +820,10 @@ export function SettingsPage() {
             </SettingsSection>
 
             {/* Delays */}
-            <SettingsSection title="Delays">
+            <SettingsSection title={t("settings.delays")}>
                 <SettingsRow
-                    label="Pre-Action Delay"
-                    description="Minutes to wait after trigger detection before starting countdown."
+                    label={t("settings.preActionDelayLabel")}
+                    description={t("settings.preActionDelayDescription")}
                 >
                     <div className="flex items-center gap-2">
                         <input
@@ -828,14 +851,14 @@ export function SettingsPage() {
                             className="text-xs"
                             style={{ color: "var(--color-text-muted)" }}
                         >
-                            min
+                            {t("settings.delayUnit")}
                         </span>
                     </div>
                 </SettingsRow>
             </SettingsSection>
 
             {/* Data */}
-            <SettingsSection title="Data">
+            <SettingsSection title={t("settings.data")}>
                 <div className="flex gap-2 pt-1">
                     <button
                         type="button"
@@ -848,7 +871,7 @@ export function SettingsPage() {
                             cursor: "pointer",
                         }}
                     >
-                        Clear All Logs
+                        {t("logs.clearAll")}
                     </button>
                     <button
                         type="button"
@@ -861,22 +884,22 @@ export function SettingsPage() {
                             cursor: "pointer",
                         }}
                     >
-                        Reset to Defaults
+                        {t("logs.resetToDefaults")}
                     </button>
                 </div>
             </SettingsSection>
 
             {/* About */}
-            <SettingsSection title="About">
-                <SettingsRow label="Version" description="Current application version.">
+            <SettingsSection title={t("settings.about")}>
+                <SettingsRow label={t("settings.versionLabel")} description={t("settings.versionDescription")}>
                     <span
                         className="text-xs font-mono"
                         style={{ color: "var(--color-text-muted)" }}
                     >
-                        v0.1.0-dev
+                        {t("settings.versionValue")}
                     </span>
                 </SettingsRow>
-                <SettingsRow label="Repository" description="View source code on GitHub.">
+                <SettingsRow label={t("settings.repoLabel")} description={t("settings.repoDescription")}>
                     <a
                         href="https://github.com/IamAshrafee/FlowWatcher"
                         target="_blank"
@@ -884,15 +907,15 @@ export function SettingsPage() {
                         className="text-xs underline"
                         style={{ color: "var(--color-accent)" }}
                     >
-                        github.com/IamAshrafee/FlowWatcher
+                        {t("settings.repoLink")}
                     </a>
                 </SettingsRow>
-                <SettingsRow label="License" description="Open-source license.">
+                <SettingsRow label={t("settings.licenseLabel")} description={t("settings.licenseDescription")}>
                     <span
                         className="text-xs"
                         style={{ color: "var(--color-text-muted)" }}
                     >
-                        MIT License
+                        {t("settings.licenseValue")}
                     </span>
                 </SettingsRow>
             </SettingsSection>

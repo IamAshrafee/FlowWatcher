@@ -6,6 +6,7 @@
  */
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useProcessStore } from "@/stores/processStore";
 import { formatSpeed } from "@/lib/format";
 
@@ -23,6 +24,7 @@ export function ProcessList() {
         toggleWatched,
         isLoading,
     } = useProcessStore();
+    const { t } = useTranslation();
 
     // Filter and sort: suggested first, then by estimated bytes descending.
     const filteredProcesses = useMemo(() => {
@@ -51,7 +53,7 @@ export function ProcessList() {
                     className="text-xs font-medium uppercase tracking-wider"
                     style={{ color: "var(--color-text-muted)" }}
                 >
-                    Running Processes
+                    {t("processList.title")}
                 </p>
                 {watchedProcesses.length > 0 && (
                     <span
@@ -61,7 +63,7 @@ export function ProcessList() {
                             color: "var(--color-accent)",
                         }}
                     >
-                        {watchedProcesses.length} selected
+                        {t("processList.selected", { count: watchedProcesses.length })}
                     </span>
                 )}
             </div>
@@ -72,7 +74,7 @@ export function ProcessList() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search processes..."
+                    placeholder={t("processList.searchPlaceholder")}
                     className="w-full rounded-md px-3 py-2 text-sm outline-none transition-colors"
                     style={{
                         backgroundColor: "var(--color-base)",
@@ -114,7 +116,7 @@ export function ProcessList() {
                         className="p-4 text-center text-sm"
                         style={{ color: "var(--color-text-muted)" }}
                     >
-                        Loading processes...
+                        {t("processList.loading")}
                     </p>
                 )}
 
@@ -124,8 +126,8 @@ export function ProcessList() {
                         style={{ color: "var(--color-text-muted)" }}
                     >
                         {searchQuery
-                            ? "No processes match your search."
-                            : "No processes found."}
+                            ? t("processList.noMatch")
+                            : t("processList.noProcesses")}
                     </p>
                 )}
 
@@ -182,7 +184,7 @@ export function ProcessList() {
                                                 color: "var(--color-accent)",
                                             }}
                                         >
-                                            Suggested
+                                            {t("processList.suggested")}
                                         </span>
                                     )}
                                 </div>
@@ -192,7 +194,7 @@ export function ProcessList() {
                                         color: "var(--color-text-muted)",
                                     }}
                                 >
-                                    PID {proc.pid}
+                                    {t("processList.pid", { pid: proc.pid })}
                                 </span>
                             </div>
 

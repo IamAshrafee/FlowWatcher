@@ -6,6 +6,7 @@
  */
 
 import { useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { useMonitoringStore } from "@/stores/monitoringStore";
 
 // ---------------------------------------------------------------------------
@@ -14,17 +15,7 @@ import { useMonitoringStore } from "@/stores/monitoringStore";
 
 export type TabId = "dashboard" | "advanced" | "logs" | "settings";
 
-interface Tab {
-    id: TabId;
-    label: string;
-}
-
-const TABS: Tab[] = [
-    { id: "dashboard", label: "Dashboard" },
-    { id: "advanced", label: "Advanced" },
-    { id: "logs", label: "Logs" },
-    { id: "settings", label: "Settings" },
-];
+const TAB_IDS: TabId[] = ["dashboard", "advanced", "logs", "settings"];
 
 interface AppShellProps {
     children: (activeTab: TabId) => ReactNode;
@@ -80,20 +71,21 @@ function PillTabs({
     activeTab: TabId;
     onTabChange: (tab: TabId) => void;
 }) {
+    const { t } = useTranslation();
     return (
         <nav
             className="inline-flex gap-1 rounded-full p-1"
             style={{ backgroundColor: "var(--color-surface)" }}
             role="tablist"
         >
-            {TABS.map((tab) => {
-                const isActive = tab.id === activeTab;
+            {TAB_IDS.map((tabId) => {
+                const isActive = tabId === activeTab;
                 return (
                     <button
-                        key={tab.id}
+                        key={tabId}
                         role="tab"
                         aria-selected={isActive}
-                        onClick={() => onTabChange(tab.id)}
+                        onClick={() => onTabChange(tabId)}
                         className="rounded-full px-4 py-1.5 text-sm font-medium transition-all"
                         style={{
                             backgroundColor: isActive
@@ -119,7 +111,7 @@ function PillTabs({
                             }
                         }}
                     >
-                        {tab.label}
+                        {t(`nav.${tabId}`)}
                     </button>
                 );
             })}
@@ -132,6 +124,7 @@ function PillTabs({
 // ---------------------------------------------------------------------------
 
 export function AppShell({ children }: AppShellProps) {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState<TabId>("dashboard");
     const monitoringStatus = useMonitoringStore((s) => s.status);
 
@@ -155,7 +148,7 @@ export function AppShell({ children }: AppShellProps) {
                         className="text-base font-semibold tracking-tight"
                         style={{ color: "var(--color-text-primary)" }}
                     >
-                        FlowWatcher
+                        {t("app.name")}
                     </h1>
                     <StatusBadge status={monitoringStatus.status} />
                 </div>

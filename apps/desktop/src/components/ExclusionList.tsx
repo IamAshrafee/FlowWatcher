@@ -6,6 +6,7 @@
  */
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useProcessStore } from "@/stores/processStore";
 
 // ---------------------------------------------------------------------------
@@ -16,6 +17,7 @@ export function ExclusionList() {
     const { excludedProcesses, addExcluded, removeExcluded } =
         useProcessStore();
     const [inputValue, setInputValue] = useState("");
+    const { t } = useTranslation();
 
     function handleAdd() {
         const name = inputValue.trim();
@@ -39,7 +41,7 @@ export function ExclusionList() {
                 className="text-xs font-medium uppercase tracking-wider"
                 style={{ color: "var(--color-text-muted)" }}
             >
-                Always Ignore
+                {t("exclusionList.title")}
             </p>
 
             {/* Add input */}
@@ -49,7 +51,7 @@ export function ExclusionList() {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="e.g. svchost.exe"
+                    placeholder={t("exclusionList.placeholder")}
                     className="flex-1 rounded-md px-3 py-2 text-sm outline-none transition-colors"
                     style={{
                         backgroundColor: "var(--color-base)",
@@ -81,7 +83,7 @@ export function ExclusionList() {
                         border: "1px solid transparent",
                     }}
                 >
-                    Add
+                    {t("exclusionList.add")}
                 </button>
             </div>
 
@@ -95,8 +97,7 @@ export function ExclusionList() {
                         border: "1px solid var(--color-border-subtle)",
                     }}
                 >
-                    No excluded processes. Add names above to always ignore
-                    them.
+                    {t("exclusionList.emptyState")}
                 </p>
             ) : (
                 <div
@@ -118,7 +119,7 @@ export function ExclusionList() {
                                 onClick={() => removeExcluded(name)}
                                 className="ml-0.5 opacity-60 hover:opacity-100"
                                 style={{ cursor: "pointer" }}
-                                aria-label={`Remove ${name} from exclusion list`}
+                                aria-label={t("exclusionList.removeAriaLabel", { name })}
                             >
                                 ✕
                             </button>

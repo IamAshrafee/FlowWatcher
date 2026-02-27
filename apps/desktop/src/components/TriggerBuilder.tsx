@@ -10,6 +10,7 @@
  */
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useMonitoringStore } from "@/stores/monitoringStore";
 import { useProcessStore } from "@/stores/processStore";
 import {
@@ -55,6 +56,7 @@ const FALLBACK_ACTION_OPTIONS = [
 // ---------------------------------------------------------------------------
 
 export function TriggerBuilder() {
+    const { t } = useTranslation();
     const { config, availableActions, updateConfig, updateCondition } =
         useMonitoringStore();
     const { isProcessModeEnabled, watchedProcesses } = useProcessStore();
@@ -86,14 +88,14 @@ export function TriggerBuilder() {
                 className="mb-3 text-xs font-medium uppercase tracking-wider"
                 style={{ color: "var(--color-text-muted)" }}
             >
-                Trigger Configuration
+                {t("trigger.title")}
             </p>
 
             <p
                 className="text-base leading-relaxed"
                 style={{ color: "var(--color-text-secondary)", lineHeight: "2.2" }}
             >
-                When{" "}
+                {t("trigger.when")}{" "}
                 {isProcessModeEnabled && watchedProcesses.length > 0 ? (
                     <span
                         className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-sm font-semibold"
@@ -103,7 +105,7 @@ export function TriggerBuilder() {
                             border: "1px solid rgba(58, 186, 180, 0.2)",
                         }}
                     >
-                        {watchedProcesses.length} selected app{watchedProcesses.length !== 1 ? "s" : ""}
+                        {t("trigger.selectedApps", { count: watchedProcesses.length })}
                     </span>
                 ) : (
                     <InlineSelect
@@ -112,7 +114,7 @@ export function TriggerBuilder() {
                         onChange={(mode) => updateCondition({ monitor_mode: mode })}
                     />
                 )}{" "}
-                {isProcessModeEnabled && watchedProcesses.length > 0 ? "are" : "is"} below{" "}
+                {isProcessModeEnabled && watchedProcesses.length > 0 ? t("trigger.areBelow") : t("trigger.isBelow")}{" "}
                 <InlineNumberInput
                     value={threshold.value}
                     onChange={(val) =>
@@ -138,7 +140,7 @@ export function TriggerBuilder() {
                         })
                     }
                 />{" "}
-                for{" "}
+                {t("trigger.for")}{" "}
                 <InlineNumberInput
                     value={duration.value}
                     onChange={(val) =>
@@ -161,13 +163,13 @@ export function TriggerBuilder() {
                         })
                     }
                 />
-                , then{" "}
+                , {t("trigger.then")}{" "}
                 <InlineSelect
                     value={config.action_type}
                     options={actionOptions}
                     onChange={(action) => updateConfig({ action_type: action })}
                 />{" "}
-                the PC.
+                {t("trigger.thePC")}
             </p>
         </div>
     );
