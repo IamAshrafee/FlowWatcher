@@ -11,6 +11,7 @@
 
 import { useMemo } from "react";
 import { useMonitoringStore } from "@/stores/monitoringStore";
+import { useProcessStore } from "@/stores/processStore";
 import {
     bytesToThreshold,
     thresholdToBytes,
@@ -56,6 +57,7 @@ const FALLBACK_ACTION_OPTIONS = [
 export function TriggerBuilder() {
     const { config, availableActions, updateConfig, updateCondition } =
         useMonitoringStore();
+    const { isProcessModeEnabled, watchedProcesses } = useProcessStore();
 
     // Derive display values from internal byte/second representations.
     const threshold = bytesToThreshold(config.condition.threshold_bytes_per_sec);
@@ -92,12 +94,25 @@ export function TriggerBuilder() {
                 style={{ color: "var(--color-text-secondary)", lineHeight: "2.2" }}
             >
                 When{" "}
-                <InlineSelect
-                    value={config.condition.monitor_mode}
-                    options={MONITOR_MODE_OPTIONS}
-                    onChange={(mode) => updateCondition({ monitor_mode: mode })}
-                />{" "}
-                is below{" "}
+                {isProcessModeEnabled && watchedProcesses.length > 0 ? (
+                    <span
+                        className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-sm font-semibold"
+                        style={{
+                            backgroundColor: "rgba(58, 186, 180, 0.1)",
+                            color: "var(--color-accent)",
+                            border: "1px solid rgba(58, 186, 180, 0.2)",
+                        }}
+                    >
+                        {watchedProcesses.length} selected app{watchedProcesses.length !== 1 ? "s" : ""}
+                    </span>
+                ) : (
+                    <InlineSelect
+                        value={config.condition.monitor_mode}
+                        options={MONITOR_MODE_OPTIONS}
+                        onChange={(mode) => updateCondition({ monitor_mode: mode })}
+                    />
+                )}{" "}
+                {isProcessModeEnabled && watchedProcesses.length > 0 ? "are" : "is"} below{" "}
                 <InlineNumberInput
                     value={threshold.value}
                     onChange={(val) =>

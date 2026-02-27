@@ -8,11 +8,13 @@
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useMonitoringStore } from "@/stores/monitoringStore";
+import { useProcessStore } from "@/stores/processStore";
 import type {
     SpeedData,
     ActionInfo,
     TriggerInfo,
     NetworkInterface,
+    ProcessInfo,
 } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -91,4 +93,31 @@ export function useAppInit() {
 
         init();
     }, [setAvailableActions, setAvailableTriggers, setInterfaceName]);
+}
+
+// ---------------------------------------------------------------------------
+// Process list fetching (for Advanced Mode)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetches running processes from the backend and updates the process store.
+ * Call this when the Advanced tab is active or when a refresh is needed.
+ */
+export function useProcesses() {
+    async function fetchProcesses() {
+        const store = useProcessStore.getState();
+        store.setIsLoading(true);
+        try {
+            const processes = await invoke<ProcessInfo[]>(
+                "get_running_processes",
+            );
+            useProcessStore.getState().setProcessList(processes);
+        } catch {
+            // Backend may not be ready.
+        } finally {
+            useProcessStore.getState().setIsLoading(false);
+        }
+    }
+
+    return { fetchProcesses };
 }
