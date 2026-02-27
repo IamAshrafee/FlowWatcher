@@ -1,14 +1,10 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! Platform abstraction layer for FlowWatcher.
+//!
+//! Provides traits and implementations for OS-level operations like
+//! network interface querying and stats collection. Currently supports
+//! Windows via the `sysinfo` crate; macOS/Linux can be added by
+//! implementing the same traits.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub mod network;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use network::{InterfaceInfo, NetworkProvider, NetworkStats, SysinfoNetworkProvider};

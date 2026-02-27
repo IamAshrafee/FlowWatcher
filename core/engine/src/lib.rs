@@ -1,14 +1,12 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! FlowWatcher Engine — the core orchestrator.
+//!
+//! Contains the [`SpeedMonitor`] which polls network stats, calculates
+//! speed deltas, and applies rolling average smoothing.
+//!
+//! This crate depends on `flowwatcher-platform` for data,
+//! `flowwatcher-triggers` for the trigger trait, and
+//! `flowwatcher-conditions` for condition evaluation.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub mod speed;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use speed::SpeedMonitor;

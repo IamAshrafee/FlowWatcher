@@ -5,3 +5,9 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+flowwatcher-platform = { path = "../platform" }
+flowwatcher-triggers = { path = "../triggers" }
+flowwatcher-conditions = { path = "../conditions" }
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+tracing = "0.1"
