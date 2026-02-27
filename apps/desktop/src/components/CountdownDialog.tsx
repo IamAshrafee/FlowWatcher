@@ -6,7 +6,7 @@
  * safety UI that prevents accidental actions.
  */
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 // ---------------------------------------------------------------------------
@@ -41,12 +41,29 @@ export function CountdownDialog({
     isOpen,
 }: CountdownDialogProps) {
     const { t } = useTranslation();
+    const cancelRef = useRef<HTMLButtonElement>(null);
+    const executeRef = useRef<HTMLButtonElement>(null);
+
     // Esc key to cancel.
     const handleKeyDown = useCallback(
         (e: KeyboardEvent) => {
             if (e.key === "Escape" && isOpen) {
                 e.preventDefault();
                 onCancel();
+            }
+            // Focus trap: Tab cycles between Cancel and Execute Now.
+            if (e.key === "Tab" && isOpen) {
+                const focusable = [cancelRef.current, executeRef.current].filter(Boolean) as HTMLElement[];
+                if (focusable.length < 2) return;
+                const first = focusable[0];
+                const last = focusable[focusable.length - 1];
+                if (e.shiftKey && document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
             }
         },
         [isOpen, onCancel],
@@ -56,6 +73,13 @@ export function CountdownDialog({
         document.addEventListener("keydown", handleKeyDown);
         return () => document.removeEventListener("keydown", handleKeyDown);
     }, [handleKeyDown]);
+
+    // Auto-focus Cancel button when dialog opens.
+    useEffect(() => {
+        if (isOpen) {
+            cancelRef.current?.focus();
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -76,6 +100,10 @@ export function CountdownDialog({
 
     return (
         <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="countdown-action-label"
+            aria-describedby="countdown-timer"
             className="animate-fade-in"
             style={{
                 position: "fixed",
@@ -91,6 +119,7 @@ export function CountdownDialog({
         >
             {/* Action label */}
             <p
+                id="countdown-action-label"
                 style={{
                     color: "var(--color-text-muted)",
                     fontSize: "14px",
@@ -157,6 +186,7 @@ export function CountdownDialog({
                     }}
                 >
                     <span
+                        id="countdown-timer"
                         style={{
                             fontSize: "64px",
                             fontWeight: 700,
@@ -181,9 +211,10 @@ export function CountdownDialog({
             >
                 {/* Cancel — primary, large, obvious */}
                 <button
+                    ref={cancelRef}
+                    id="countdown-cancel-btn"
                     type="button"
                     onClick={onCancel}
-                    autoFocus
                     style={{
                         backgroundColor: "var(--color-accent)",
                         color: "var(--color-text-inverse)",
@@ -212,6 +243,8 @@ export function CountdownDialog({
 
                 {/* Execute Now — subtle secondary */}
                 <button
+                    ref={executeRef}
+                    id="countdown-execute-btn"
                     type="button"
                     onClick={onExecuteNow}
                     style={{

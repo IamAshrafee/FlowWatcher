@@ -147,6 +147,8 @@ export interface AppSettings {
     pre_action_delay_mins: number;
     /** Keep screen on during monitoring. */
     keep_screen_on: boolean;
+    /** Whether activity logging is enabled. */
+    activity_logging: boolean;
     /** Default monitoring config. */
     default_config: MonitoringConfig | null;
 }

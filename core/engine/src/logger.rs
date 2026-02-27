@@ -126,6 +126,57 @@ impl ActivityLogger {
             .collect::<Vec<_>>()
             .join("\n")
     }
+
+    /// Save all log entries to a JSON file.
+    pub fn save_to_file(&self, path: &std::path::Path) -> Result<(), String> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        let json = serde_json::to_string_pretty(&self.entries)
+            .map_err(|e| e.to_string())?;
+        std::fs::write(path, json).map_err(|e| e.to_string())
+    }
+
+    /// Load log entries from a JSON file. Replaces current entries.
+    pub fn load_from_file(path: &std::path::Path) -> Result<Self, String> {
+        if !path.exists() {
+            return Ok(Self::new());
+        }
+        let data = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+        let entries: Vec<LogEntry> =
+            serde_json::from_str(&data).map_err(|e| e.to_string())?;
+        // Cap at MAX_ENTRIES, keeping newest.
+        let start = if entries.len() > MAX_ENTRIES {
+            entries.len() - MAX_ENTRIES
+        } else {
+            0
+        };
+        Ok(Self {
+            entries: entries[start..].to_vec(),
+        })
+    }
+
+    /// Remove entries older than `days` days.
+    ///
+    /// Uses the timestamp prefix (YYYY-MM-DD) for comparison.
+    pub fn prune_older_than(&mut self, days: u64) {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let cutoff_secs = now.saturating_sub(days * 86400);
+        let (cutoff_year, cutoff_month, cutoff_day) = days_to_date(cutoff_secs / 86400);
+        let cutoff_str = format!("{:04}-{:02}-{:02}", cutoff_year, cutoff_month, cutoff_day);
+
+        self.entries.retain(|e| {
+            // Compare the date portion of the timestamp.
+            if e.timestamp.len() >= 10 {
+                e.timestamp[..10] >= *cutoff_str
+            } else {
+                true // Keep entries with unexpected timestamp format.
+            }
+        });
+    }
 }
 
 // ---------------------------------------------------------------------------

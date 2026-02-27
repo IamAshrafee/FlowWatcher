@@ -21,6 +21,19 @@ pub fn run() {
             // Set up system tray icon with context menu.
             tray::setup_tray(app)?;
 
+            // Load persisted activity logs from file.
+            {
+                let state = app.state::<AppState>();
+                if let Ok(dir) = app.path().app_data_dir() {
+                    let log_path = dir.join("activity_logs.json");
+                    if let Ok(mut logger) = flowwatcher_engine::ActivityLogger::load_from_file(&log_path) {
+                        // Enforce 30-day retention on load.
+                        logger.prune_older_than(30);
+                        *state.activity_logger.blocking_lock() = logger;
+                    }
+                }
+            }
+
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -62,6 +75,10 @@ pub fn run() {
             commands::reset_settings,
             commands::set_close_to_tray,
             commands::get_close_to_tray,
+            commands::set_keep_screen_on,
+            commands::get_keep_screen_on,
+            commands::export_config,
+            commands::import_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

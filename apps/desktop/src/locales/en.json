@@ -104,7 +104,12 @@
         "exportSuccess": "Logs exported as {{format}} and copied to clipboard.",
         "exportFailed": "Export failed.",
         "clearAll": "Clear All Logs",
-        "resetToDefaults": "Reset to Defaults"
+        "resetToDefaults": "Reset to Defaults",
+        "exportConfig": "Export Config",
+        "importConfig": "Import Config",
+        "configExported": "Config copied to clipboard.",
+        "configImported": "Config imported successfully. Reload to apply.",
+        "configImportFailed": "Failed to import: invalid JSON."
     },
     "settings": {
         "title": "Settings",
@@ -144,6 +149,11 @@
         "licenseDescription": "Open-source license.",
         "licenseValue": "MIT License",
         "resetConfirm": "Reset all settings to defaults? This cannot be undone.",
-        "resetSuccess": "Settings reset to defaults."
+        "resetSuccess": "Settings reset to defaults.",
+        "activityLoggingLabel": "Activity Logging",
+        "activityLoggingDescription": "Record monitoring events to the activity log."
+    },
+    "toast": {
+        "hibernateUnavailable": "Hibernation is not available on this system. Enable with: powercfg /hibernate on"
     }
 }

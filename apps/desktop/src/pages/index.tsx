@@ -123,8 +123,10 @@ export function DashboardPage() {
 
             {/* Start / Stop Button */}
             <button
+                id="monitoring-toggle-btn"
                 type="button"
                 onClick={handleToggleMonitoring}
+                aria-label={isMonitoring ? t("dashboard.stopMonitoring") : t("dashboard.startMonitoring")}
                 className="flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-base font-semibold transition-all"
                 style={{
                     backgroundColor: isMonitoring
@@ -163,6 +165,9 @@ export function DashboardPage() {
             {/* Status indicator */}
             {status.status !== "Idle" && (
                 <div
+                    role="status"
+                    aria-live="polite"
+                    id="monitoring-status"
                     className="rounded-lg p-3 text-center text-sm animate-fade-in"
                     style={{
                         backgroundColor: isMonitoring
@@ -245,6 +250,15 @@ export function AdvancedPage() {
             fetchProcesses();
         }
     }, [isProcessModeEnabled]);
+
+    // Auto-refresh process list every 10 seconds when mode is on.
+    useEffect(() => {
+        if (!isProcessModeEnabled) return;
+        const interval = setInterval(() => {
+            fetchProcesses();
+        }, 10_000);
+        return () => clearInterval(interval);
+    }, [isProcessModeEnabled, fetchProcesses]);
 
     // Sync process mode to monitoring store trigger_type.
     useEffect(() => {
@@ -802,7 +816,14 @@ export function SettingsPage() {
                 <SettingsRow label={t("settings.keepScreenOnLabel")} description={t("settings.keepScreenOnDescription")}>
                     <ToggleSwitch
                         checked={settings.keep_screen_on}
-                        onChange={(v) => updateSettings({ keep_screen_on: v })}
+                        onChange={async (v) => {
+                            updateSettings({ keep_screen_on: v });
+                            try {
+                                await invoke("set_keep_screen_on", { enabled: v });
+                            } catch {
+                                // Silent fail in dev mode.
+                            }
+                        }}
                     />
                 </SettingsRow>
                 <SettingsRow label={t("settings.autoSaveLabel")} description={t("settings.autoSaveDescription")}>
@@ -815,6 +836,12 @@ export function SettingsPage() {
                     <ToggleSwitch
                         checked={settings.show_notifications}
                         onChange={(v) => updateSettings({ show_notifications: v })}
+                    />
+                </SettingsRow>
+                <SettingsRow label={t("settings.activityLoggingLabel")} description={t("settings.activityLoggingDescription")}>
+                    <ToggleSwitch
+                        checked={settings.activity_logging}
+                        onChange={(v) => updateSettings({ activity_logging: v })}
                     />
                 </SettingsRow>
             </SettingsSection>
@@ -885,6 +912,49 @@ export function SettingsPage() {
                         }}
                     >
                         {t("logs.resetToDefaults")}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            try {
+                                const json = await invoke<string>("export_config");
+                                await navigator.clipboard.writeText(json);
+                                alert(t("logs.configExported"));
+                            } catch {
+                                // Silent fail.
+                            }
+                        }}
+                        className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                        style={{
+                            backgroundColor: "var(--color-surface)",
+                            color: "var(--color-text-secondary)",
+                            border: "1px solid var(--color-border-default)",
+                            cursor: "pointer",
+                        }}
+                    >
+                        {t("logs.exportConfig")}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            try {
+                                const json = await navigator.clipboard.readText();
+                                await invoke("import_config", { configJson: json });
+                                alert(t("logs.configImported"));
+                                loadSettings();
+                            } catch {
+                                alert(t("logs.configImportFailed"));
+                            }
+                        }}
+                        className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                        style={{
+                            backgroundColor: "var(--color-surface)",
+                            color: "var(--color-text-secondary)",
+                            border: "1px solid var(--color-border-default)",
+                            cursor: "pointer",
+                        }}
+                    >
+                        {t("logs.importConfig")}
                     </button>
                 </div>
             </SettingsSection>

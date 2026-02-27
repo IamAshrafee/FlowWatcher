@@ -7,6 +7,7 @@
 
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import i18n from "@/i18n";
 import type { AppSettings } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -22,6 +23,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     auto_save: true,
     pre_action_delay_mins: 0,
     keep_screen_on: false,
+    activity_logging: true,
     default_config: null,
 };
 
@@ -65,6 +67,16 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
                 await invoke("set_close_to_tray", { enabled: loaded.minimize_to_tray });
             } catch {
                 // Silent fail — command may not be available in dev mode.
+            }
+            // Sync keep_screen_on preference to backend.
+            try {
+                await invoke("set_keep_screen_on", { enabled: loaded.keep_screen_on });
+            } catch {
+                // Silent fail.
+            }
+            // Sync language to i18n.
+            if (loaded.language && loaded.language !== i18n.language) {
+                i18n.changeLanguage(loaded.language);
             }
         } catch {
             // Use defaults if load fails (e.g., first run or dev mode).

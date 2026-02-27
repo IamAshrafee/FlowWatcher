@@ -72,6 +72,31 @@ function PillTabs({
     onTabChange: (tab: TabId) => void;
 }) {
     const { t } = useTranslation();
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        const currentIdx = TAB_IDS.indexOf(activeTab);
+        let nextIdx = currentIdx;
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+            e.preventDefault();
+            nextIdx = (currentIdx + 1) % TAB_IDS.length;
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+            e.preventDefault();
+            nextIdx = (currentIdx - 1 + TAB_IDS.length) % TAB_IDS.length;
+        } else if (e.key === "Home") {
+            e.preventDefault();
+            nextIdx = 0;
+        } else if (e.key === "End") {
+            e.preventDefault();
+            nextIdx = TAB_IDS.length - 1;
+        }
+        if (nextIdx !== currentIdx) {
+            onTabChange(TAB_IDS[nextIdx]);
+            // Focus the newly active tab button.
+            const btn = document.getElementById(`tab-${TAB_IDS[nextIdx]}`);
+            btn?.focus();
+        }
+    };
+
     return (
         <nav
             className="inline-flex gap-1 rounded-full p-1"
@@ -83,9 +108,12 @@ function PillTabs({
                 return (
                     <button
                         key={tabId}
+                        id={`tab-${tabId}`}
                         role="tab"
                         aria-selected={isActive}
+                        tabIndex={isActive ? 0 : -1}
                         onClick={() => onTabChange(tabId)}
+                        onKeyDown={handleKeyDown}
                         className="rounded-full px-4 py-1.5 text-sm font-medium transition-all"
                         style={{
                             backgroundColor: isActive

@@ -281,6 +281,7 @@ pub async fn get_activity_logs(
 /// Add a new activity log entry.
 #[tauri::command]
 pub async fn add_activity_log(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     trigger_reason: String,
     action_name: String,
@@ -297,14 +298,30 @@ pub async fn add_activity_log(
     };
 
     let entry = LogEntry::now(trigger_reason, action_name, log_status, details);
-    state.activity_logger.lock().await.add_entry(entry);
+    let mut logger = state.activity_logger.lock().await;
+    logger.add_entry(entry);
+
+    // Persist to file (best-effort).
+    if let Ok(dir) = app.path().app_data_dir() {
+        let _ = logger.save_to_file(&dir.join("activity_logs.json"));
+    }
     Ok(())
 }
 
 /// Clear all activity logs.
 #[tauri::command]
-pub async fn clear_activity_logs(state: State<'_, AppState>) -> Result<(), String> {
+pub async fn clear_activity_logs(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
     state.activity_logger.lock().await.clear();
+    // Delete the persisted file too.
+    if let Ok(dir) = app.path().app_data_dir() {
+        let path = dir.join("activity_logs.json");
+        if path.exists() {
+            let _ = std::fs::remove_file(&path);
+        }
+    }
     Ok(())
 }
 
@@ -415,4 +432,91 @@ pub struct TriggerInfo {
     pub id: String,
     pub name: String,
     pub description: String,
+}
+
+// ---------------------------------------------------------------------------
+// Keep Screen On commands
+// ---------------------------------------------------------------------------
+
+/// Set whether the display should stay awake during active monitoring.
+///
+/// Uses Windows `SetThreadExecutionState` to prevent display/system sleep.
+#[tauri::command]
+pub async fn set_keep_screen_on(
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<(), String> {
+    *state.keep_screen_on.lock().await = enabled;
+
+    #[cfg(windows)]
+    {
+        use windows_sys::Win32::System::Power::SetThreadExecutionState;
+        use windows_sys::Win32::System::Power::{
+            ES_CONTINUOUS, ES_DISPLAY_REQUIRED, ES_SYSTEM_REQUIRED,
+        };
+
+        unsafe {
+            if enabled {
+                SetThreadExecutionState(
+                    ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED,
+                );
+            } else {
+                SetThreadExecutionState(ES_CONTINUOUS);
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Get the current keep-screen-on preference.
+#[tauri::command]
+pub async fn get_keep_screen_on(
+    state: State<'_, AppState>,
+) -> Result<bool, String> {
+    Ok(*state.keep_screen_on.lock().await)
+}
+
+// ---------------------------------------------------------------------------
+// Config import/export commands
+// ---------------------------------------------------------------------------
+
+/// Export the current settings as a JSON string.
+#[tauri::command]
+pub async fn export_config(app: tauri::AppHandle) -> Result<String, String> {
+    let path = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("settings.json");
+
+    if path.exists() {
+        std::fs::read_to_string(&path).map_err(|e| e.to_string())
+    } else {
+        Ok("{}".to_string())
+    }
+}
+
+/// Import settings from a JSON string.
+#[tauri::command]
+pub async fn import_config(
+    app: tauri::AppHandle,
+    config_json: String,
+) -> Result<(), String> {
+    // Validate the JSON first.
+    let _: serde_json::Value =
+        serde_json::from_str(&config_json).map_err(|e| format!("Invalid JSON: {e}"))?;
+
+    let path = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| e.to_string())?
+        .join("settings.json");
+
+    // Ensure the directory exists.
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+
+    std::fs::write(&path, &config_json).map_err(|e| e.to_string())
 }
