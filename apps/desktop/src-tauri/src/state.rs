@@ -3,7 +3,7 @@
 //! Uses `tokio::sync::Mutex` for async-safe shared state across commands.
 
 use flowwatcher_conditions::ThresholdCondition;
-use flowwatcher_engine::{ActionScheduler, SpeedMonitor};
+use flowwatcher_engine::{ActionScheduler, ActivityLogger, SpeedMonitor};
 use flowwatcher_platform::network::SysinfoNetworkProvider;
 use flowwatcher_platform::process::SysinfoProcessProvider;
 use serde::{Deserialize, Serialize};
@@ -99,6 +99,8 @@ pub struct AppState {
     pub status: Mutex<MonitoringStatus>,
     /// Current monitoring configuration.
     pub config: Mutex<Option<MonitoringConfig>>,
+    /// Activity logger for tracking events.
+    pub activity_logger: Mutex<ActivityLogger>,
 }
 
 impl AppState {
@@ -112,6 +114,7 @@ impl AppState {
             scheduler: Mutex::new(ActionScheduler::new(60, 30)),
             status: Mutex::new(MonitoringStatus::Idle),
             config: Mutex::new(None),
+            activity_logger: Mutex::new(ActivityLogger::new()),
         }
     }
 }

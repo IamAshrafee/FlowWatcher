@@ -152,7 +152,8 @@ export interface AppSettings {
 /** A log entry from the activity log. */
 export interface LogEntry {
     timestamp: string;
-    level: "info" | "warning" | "error";
-    message: string;
-    details: Record<string, unknown> | null;
+    trigger_reason: string;
+    action_name: string;
+    status: "executed" | "cancelled" | "error" | "info";
+    details: string | null;
 }

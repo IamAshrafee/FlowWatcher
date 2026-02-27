@@ -6,7 +6,7 @@
  * Other pages are placeholders for future phases.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { SpeedCard } from "@/components/SpeedCard";
 import { TriggerBuilder } from "@/components/TriggerBuilder";
@@ -18,6 +18,7 @@ import { useMonitoringStore } from "@/stores/monitoringStore";
 import { useProcessStore } from "@/stores/processStore";
 import { useSpeedPolling, useAppInit, useProcesses } from "@/hooks/useTauri";
 import { useCountdown } from "@/hooks/useCountdown";
+import type { LogEntry } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Dashboard Page (Phase 6)
@@ -368,21 +369,258 @@ export function AdvancedPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Logs Page (Phase 8 placeholder)
+// Logs Page (Phase 9)
 // ---------------------------------------------------------------------------
 
 export function LogsPage() {
+    const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [search, setSearch] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Fetch logs on mount.
+    useEffect(() => {
+        fetchLogs();
+    }, []);
+
+    async function fetchLogs() {
+        setIsLoading(true);
+        try {
+            const data = await invoke("get_activity_logs");
+            setLogs(data as LogEntry[]);
+        } catch {
+            // Silent fail — logs may not be available in dev mode.
+            setLogs([]);
+        }
+        setIsLoading(false);
+    }
+
+    async function handleClear() {
+        try {
+            await invoke("clear_activity_logs");
+            setLogs([]);
+        } catch {
+            // Silent fail.
+        }
+    }
+
+    async function handleExport(format: string) {
+        try {
+            const data = await invoke("export_activity_logs", { format });
+            // Copy to clipboard as a simple export mechanism.
+            await navigator.clipboard.writeText(data as string);
+            // Use inline feedback instead of toast (toast is mounted in Dashboard).
+            alert(`Logs exported as ${format.toUpperCase()} and copied to clipboard.`);
+        } catch {
+            alert("Export failed.");
+        }
+    }
+
+    // Filter logs by search query.
+    const filtered = search
+        ? logs.filter(
+            (l) =>
+                l.trigger_reason.toLowerCase().includes(search.toLowerCase()) ||
+                l.action_name.toLowerCase().includes(search.toLowerCase()) ||
+                (l.details || "").toLowerCase().includes(search.toLowerCase()),
+        )
+        : logs;
+
+    // Reverse so newest is first.
+    const sorted = [...filtered].reverse();
+
+    const STATUS_BADGES: Record<string, { icon: string; color: string; label: string }> = {
+        executed: { icon: "✅", color: "#66BB6A", label: "Executed" },
+        cancelled: { icon: "❌", color: "var(--color-warning)", label: "Cancelled" },
+        error: { icon: "⚠️", color: "#FFB74D", label: "Error" },
+        info: { icon: "ℹ", color: "var(--color-accent)", label: "Info" },
+    };
+
     return (
-        <div className="animate-slide-up">
-            <h2
-                className="text-2xl font-bold"
-                style={{ color: "var(--color-text-primary)" }}
+        <div className="animate-slide-up space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2
+                        className="text-lg font-semibold"
+                        style={{ color: "var(--color-text-primary)" }}
+                    >
+                        Activity Logs
+                    </h2>
+                    <p
+                        className="text-sm"
+                        style={{ color: "var(--color-text-secondary)" }}
+                    >
+                        {logs.length} event{logs.length !== 1 ? "s" : ""} recorded
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={fetchLogs}
+                    className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                    style={{
+                        backgroundColor: "var(--color-surface)",
+                        color: "var(--color-text-secondary)",
+                        border: "1px solid var(--color-border-default)",
+                        cursor: "pointer",
+                    }}
+                >
+                    ↻ Refresh
+                </button>
+            </div>
+
+            {/* Search bar */}
+            <input
+                type="text"
+                placeholder="Search logs..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded-lg px-4 py-2.5 text-sm"
+                style={{
+                    backgroundColor: "var(--color-surface)",
+                    color: "var(--color-text-primary)",
+                    border: "1px solid var(--color-border-default)",
+                    outline: "none",
+                }}
+                onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "var(--color-accent)";
+                }}
+                onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "var(--color-border-default)";
+                }}
+            />
+
+            {/* Log table */}
+            <div
+                className="rounded-lg overflow-hidden"
+                style={{
+                    backgroundColor: "var(--color-surface)",
+                    border: "1px solid var(--color-border-subtle)",
+                    boxShadow: "var(--shadow-card)",
+                }}
             >
-                Activity Logs
-            </h2>
-            <p className="mt-2" style={{ color: "var(--color-text-secondary)" }}>
-                History of monitoring sessions and executed actions.
-            </p>
+                {/* Table header */}
+                <div
+                    className="grid text-xs font-medium uppercase tracking-wider px-4 py-2.5"
+                    style={{
+                        gridTemplateColumns: "140px 1fr 1fr 100px",
+                        color: "var(--color-text-muted)",
+                        borderBottom: "1px solid var(--color-border-subtle)",
+                        backgroundColor: "rgba(255,255,255,0.02)",
+                    }}
+                >
+                    <span>Date/Time</span>
+                    <span>Trigger</span>
+                    <span>Action</span>
+                    <span>Status</span>
+                </div>
+
+                {/* Table body */}
+                <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                    {isLoading ? (
+                        <p
+                            className="p-6 text-center text-sm"
+                            style={{ color: "var(--color-text-muted)" }}
+                        >
+                            Loading...
+                        </p>
+                    ) : sorted.length === 0 ? (
+                        <p
+                            className="p-6 text-center text-sm"
+                            style={{ color: "var(--color-text-muted)" }}
+                        >
+                            {search
+                                ? "No matching log entries."
+                                : "No activity logged yet. Start monitoring to see events here."}
+                        </p>
+                    ) : (
+                        sorted.map((entry, i) => {
+                            const badge = STATUS_BADGES[entry.status] || STATUS_BADGES.info;
+                            return (
+                                <div
+                                    key={`${entry.timestamp}-${i}`}
+                                    className="grid px-4 py-2.5 text-sm transition-colors"
+                                    style={{
+                                        gridTemplateColumns: "140px 1fr 1fr 100px",
+                                        borderBottom: "1px solid var(--color-border-subtle)",
+                                        color: "var(--color-text-secondary)",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor =
+                                            "rgba(255,255,255,0.02)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor = "transparent";
+                                    }}
+                                >
+                                    <span
+                                        className="text-xs font-mono"
+                                        style={{ color: "var(--color-text-muted)" }}
+                                    >
+                                        {entry.timestamp}
+                                    </span>
+                                    <span>{entry.trigger_reason}</span>
+                                    <span>{entry.action_name}</span>
+                                    <span
+                                        className="inline-flex items-center gap-1 text-xs"
+                                        style={{ color: badge.color }}
+                                    >
+                                        {badge.icon} {badge.label}
+                                    </span>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            </div>
+
+            {/* Footer buttons */}
+            <div className="flex gap-2">
+                <button
+                    type="button"
+                    onClick={handleClear}
+                    disabled={logs.length === 0}
+                    className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                    style={{
+                        backgroundColor: "var(--color-surface)",
+                        color: logs.length > 0 ? "var(--color-warning)" : "var(--color-text-muted)",
+                        border: "1px solid var(--color-border-default)",
+                        cursor: logs.length > 0 ? "pointer" : "not-allowed",
+                        opacity: logs.length > 0 ? 1 : 0.5,
+                    }}
+                >
+                    Clear Logs
+                </button>
+                <button
+                    type="button"
+                    onClick={() => handleExport("json")}
+                    disabled={logs.length === 0}
+                    className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                    style={{
+                        backgroundColor: "var(--color-surface)",
+                        color: "var(--color-text-secondary)",
+                        border: "1px solid var(--color-border-default)",
+                        cursor: logs.length > 0 ? "pointer" : "not-allowed",
+                        opacity: logs.length > 0 ? 1 : 0.5,
+                    }}
+                >
+                    Export JSON
+                </button>
+                <button
+                    type="button"
+                    onClick={() => handleExport("txt")}
+                    disabled={logs.length === 0}
+                    className="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                    style={{
+                        backgroundColor: "var(--color-surface)",
+                        color: "var(--color-text-secondary)",
+                        border: "1px solid var(--color-border-default)",
+                        cursor: logs.length > 0 ? "pointer" : "not-allowed",
+                        opacity: logs.length > 0 ? 1 : 0.5,
+                    }}
+                >
+                    Export TXT
+                </button>
+            </div>
         </div>
     );
 }

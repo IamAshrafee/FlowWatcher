@@ -265,6 +265,62 @@ pub async fn trigger_countdown(state: State<'_, AppState>) -> Result<(), String>
     Ok(())
 }
 
+// ---------------------------------------------------------------------------
+// Logging commands
+// ---------------------------------------------------------------------------
+
+/// Get all activity log entries.
+#[tauri::command]
+pub async fn get_activity_logs(
+    state: State<'_, AppState>,
+) -> Result<Vec<flowwatcher_engine::LogEntry>, String> {
+    let logger = state.activity_logger.lock().await;
+    Ok(logger.get_all().to_vec())
+}
+
+/// Add a new activity log entry.
+#[tauri::command]
+pub async fn add_activity_log(
+    state: State<'_, AppState>,
+    trigger_reason: String,
+    action_name: String,
+    status: String,
+    details: Option<String>,
+) -> Result<(), String> {
+    use flowwatcher_engine::{LogEntry, LogStatus};
+
+    let log_status = match status.as_str() {
+        "executed" => LogStatus::Executed,
+        "cancelled" => LogStatus::Cancelled,
+        "error" => LogStatus::Error,
+        _ => LogStatus::Info,
+    };
+
+    let entry = LogEntry::now(trigger_reason, action_name, log_status, details);
+    state.activity_logger.lock().await.add_entry(entry);
+    Ok(())
+}
+
+/// Clear all activity logs.
+#[tauri::command]
+pub async fn clear_activity_logs(state: State<'_, AppState>) -> Result<(), String> {
+    state.activity_logger.lock().await.clear();
+    Ok(())
+}
+
+/// Export activity logs as JSON or TXT string.
+#[tauri::command]
+pub async fn export_activity_logs(
+    state: State<'_, AppState>,
+    format: String,
+) -> Result<String, String> {
+    let logger = state.activity_logger.lock().await;
+    match format.as_str() {
+        "txt" => Ok(logger.export_txt()),
+        _ => logger.export_json().map_err(|e| e.to_string()),
+    }
+}
+
 /// Trigger type metadata for frontend display.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TriggerInfo {

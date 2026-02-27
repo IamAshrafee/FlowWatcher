@@ -31,6 +31,10 @@ pub fn run() {
             commands::get_available_triggers,
             commands::get_available_actions,
             commands::trigger_countdown,
+            commands::get_activity_logs,
+            commands::add_activity_log,
+            commands::clear_activity_logs,
+            commands::export_activity_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
