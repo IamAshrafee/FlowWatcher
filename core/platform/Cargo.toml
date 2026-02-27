@@ -5,6 +5,11 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+flowwatcher-actions = { path = "../actions" }
 sysinfo = "0.35"
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
+async-trait = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt"] }

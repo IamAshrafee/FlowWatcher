@@ -8,6 +8,11 @@ license.workspace = true
 flowwatcher-platform = { path = "../platform" }
 flowwatcher-triggers = { path = "../triggers" }
 flowwatcher-conditions = { path = "../conditions" }
+flowwatcher-actions = { path = "../actions" }
+tokio = { version = "1", features = ["rt", "time", "sync"] }
 thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 tracing = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "time", "sync", "macros", "test-util"] }
