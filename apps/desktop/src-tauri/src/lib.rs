@@ -30,6 +30,7 @@ pub fn run() {
             commands::get_running_processes,
             commands::get_available_triggers,
             commands::get_available_actions,
+            commands::trigger_countdown,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

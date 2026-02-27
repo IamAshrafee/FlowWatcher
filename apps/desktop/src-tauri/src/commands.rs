@@ -69,7 +69,7 @@ pub async fn get_current_speed(state: State<'_, AppState>) -> Result<SpeedData, 
                 upload_bps: 0,
             })
         }
-        Err(e) => {
+        Err(_e) => {
             // Return last known speeds if available, else zeros.
             Ok(SpeedData {
                 download_bps: monitor.current_download_speed(),
@@ -254,6 +254,15 @@ pub async fn get_available_actions() -> Result<Vec<ActionInfo>, String> {
         .iter()
         .map(|a| a.info())
         .collect())
+}
+
+/// Trigger the countdown flow for testing — schedules the action.
+#[tauri::command]
+pub async fn trigger_countdown(state: State<'_, AppState>) -> Result<(), String> {
+    let mut scheduler = state.scheduler.lock().await;
+    scheduler.schedule().map_err(|e| e.to_string())?;
+    *state.status.lock().await = MonitoringStatus::TriggerPending;
+    Ok(())
 }
 
 /// Trigger type metadata for frontend display.

@@ -1,6 +1,6 @@
 # FlowWatcher — Phase Completion Tracker
 
-> **Last Audit:** 2026-02-27 22:29 UTC+6
+> **Last Audit:** 2026-02-27 23:13 UTC+6
 
 ## Completed Phases
 
@@ -14,12 +14,12 @@
 | 5 | Frontend: Design System & Shell | 2026-02-27 | ✅ Complete |
 | 6 | Frontend: Dashboard (Core Monitoring UI) | 2026-02-27 | ✅ Complete |
 | 7 | Frontend: Advanced Mode (Process Selection UI) | 2026-02-27 | ✅ Complete |
+| 8 | Safety UI: Countdown & Warning System | 2026-02-27 | ✅ Complete |
 
 ## Upcoming Phases
 
 | Phase | Title | Status |
 |-------|-------|--------|
-| 8 | Safety UI: Countdown & Warning System | 📋 Not Started |
 | 9 | Activity Logging | 📋 Not Started |
 | 10 | Settings, Persistence & Configuration | 📋 Not Started |
 | 11 | System Tray & Background Operation | 📋 Not Started |

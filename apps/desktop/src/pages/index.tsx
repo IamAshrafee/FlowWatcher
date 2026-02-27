@@ -10,11 +10,14 @@ import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { SpeedCard } from "@/components/SpeedCard";
 import { TriggerBuilder } from "@/components/TriggerBuilder";
+import { CountdownDialog } from "@/components/CountdownDialog";
+import { ToastContainer } from "@/components/ToastNotification";
 import { ProcessList } from "@/components/ProcessList";
 import { ExclusionList } from "@/components/ExclusionList";
 import { useMonitoringStore } from "@/stores/monitoringStore";
 import { useProcessStore } from "@/stores/processStore";
 import { useSpeedPolling, useAppInit, useProcesses } from "@/hooks/useTauri";
+import { useCountdown } from "@/hooks/useCountdown";
 
 // ---------------------------------------------------------------------------
 // Dashboard Page (Phase 6)
@@ -29,6 +32,15 @@ export function DashboardPage() {
     // ── Tauri integration hooks ──
     useSpeedPolling();
     useAppInit();
+
+    // ── Phase 8: Safety countdown ──
+    const {
+        countdownState,
+        startCountdown,
+        cancelCountdown,
+        executeNow,
+        isCountdownActive,
+    } = useCountdown();
 
     async function handleToggleMonitoring() {
         try {
@@ -138,6 +150,44 @@ export function DashboardPage() {
                     {status.status === "Paused" && "Monitoring paused."}
                 </div>
             )}
+
+            {/* Phase 8: Trigger test button (dev/testing) */}
+            {isMonitoring && (
+                <button
+                    type="button"
+                    onClick={startCountdown}
+                    className="w-full rounded-lg px-4 py-2 text-xs font-medium transition-colors"
+                    style={{
+                        backgroundColor: "rgba(255, 183, 77, 0.06)",
+                        color: "#FFB74D",
+                        border: "1px solid rgba(255, 183, 77, 0.15)",
+                        cursor: "pointer",
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                            "rgba(255, 183, 77, 0.12)";
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                            "rgba(255, 183, 77, 0.06)";
+                    }}
+                >
+                    ⚠ Simulate Trigger (Test Safety UI)
+                </button>
+            )}
+
+            {/* Phase 8: Countdown overlay */}
+            <CountdownDialog
+                isOpen={isCountdownActive}
+                remainingSeconds={countdownState.remainingSeconds}
+                totalSeconds={countdownState.totalSeconds}
+                actionName={countdownState.actionName}
+                onCancel={cancelCountdown}
+                onExecuteNow={executeNow}
+            />
+
+            {/* Phase 8: Toast notifications */}
+            <ToastContainer />
         </div>
     );
 }
