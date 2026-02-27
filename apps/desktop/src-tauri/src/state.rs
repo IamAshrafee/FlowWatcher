@@ -101,6 +101,8 @@ pub struct AppState {
     pub config: Mutex<Option<MonitoringConfig>>,
     /// Activity logger for tracking events.
     pub activity_logger: Mutex<ActivityLogger>,
+    /// Whether the window close button should minimize to tray.
+    pub close_to_tray: Mutex<bool>,
 }
 
 impl AppState {
@@ -115,6 +117,7 @@ impl AppState {
             status: Mutex::new(MonitoringStatus::Idle),
             config: Mutex::new(None),
             activity_logger: Mutex::new(ActivityLogger::new()),
+            close_to_tray: Mutex::new(false),
         }
     }
 }

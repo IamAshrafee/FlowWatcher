@@ -1,7 +1,9 @@
 mod commands;
 mod state;
+mod tray;
 
 use state::AppState;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -15,7 +17,27 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            // Set up system tray icon with context menu.
+            tray::setup_tray(app)?;
+
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            // Close-to-tray: intercept window close if preference is enabled.
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let app = window.app_handle();
+                let state = app.state::<AppState>();
+
+                // Check close_to_tray preference (blocking OK here — short lock).
+                let close_to_tray = state.close_to_tray.blocking_lock();
+                if *close_to_tray {
+                    // Prevent the window from actually closing.
+                    api.prevent_close();
+                    // Hide the window instead.
+                    let _ = window.hide();
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_network_interfaces,
@@ -38,6 +60,8 @@ pub fn run() {
             commands::get_settings,
             commands::save_settings,
             commands::reset_settings,
+            commands::set_close_to_tray,
+            commands::get_close_to_tray,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

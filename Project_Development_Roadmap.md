@@ -666,6 +666,8 @@ User clicks "Start Monitoring", closes the window. The app minimizes to the syst
 ### Deferred Items (from earlier phases)
 - [From Phase 5] **Custom Titlebar** (`decorations: false` in Tauri config) — Replace default OS decorations with a custom titlebar that includes window minimize/maximize/close buttons. The Tauri drag region is already set up in `AppShell.tsx`.
 - [From Phase 4] **Tauri tray capabilities** — Permission plugins for system tray need to be added to the Tauri capabilities config.
+- [From Phase 10] **Auto-Start Plugin** — `tauri-plugin-autostart` needs to be installed and wired to the existing Settings toggle. The UI toggle exists but is currently non-functional.
+- [From Phase 8] **OS-level notifications** — Tauri notification plugin for pre-warning alerts when app is minimized to tray.
 
 ## Depends On
 Phase 6 (dashboard must exist to restore to).
@@ -700,6 +702,9 @@ All UI strings are externalized. Adding a new language requires only adding a JS
 
 ## Skills to Use
 - **`i18n-localization`** — For detecting hardcoded strings, setting up locale files, translation management patterns, and RTL support preparation.
+
+### Deferred Items (from earlier phases)
+- [From Phase 10] **Language selector wiring** — Settings page has a language placeholder dropdown. Needs to be connected to i18next locale switching once translations are set up.
 
 ## Depends On
 Phase 5, Phase 6 (components must exist to wrap strings).
@@ -788,6 +793,20 @@ The app runs for hours without memory leaks or CPU spikes. Edge cases are handle
 ### Deferred Items (from earlier phases)
 - [From Phase 3] **True per-process network usage via ETW** — Currently using disk I/O as a proxy. Event Tracing for Windows (ETW) would provide accurate per-process network bytes. Complex to implement; evaluate if the proxy is "good enough" or upgrade is needed.
 - [From Phase 4] **Tauri auto-start capability** — Permission plugin for `tauri-plugin-autostart` needs to be registered in capabilities config.
+- [From Phase 4/8] **Event streaming runtime (`app.emit()`)** — Background polling loop emitting `speed-update`, `monitoring-state-change`, `countdown-tick`, `pre-warning` events via Tauri. Currently using `setInterval`/`invoke()` polling. The `ActionScheduler` produces events; they need wiring to `app.emit()` + a tokio background task.
+- [From Phase 1/8] **`NetworkIdleTrigger` struct** — Concrete trigger combining `SpeedMonitor` + `ThresholdCondition` into a single `Trigger` trait impl with a real orchestration loop.
+- [From Phase 3/8] **Combined trigger logic** — Orchestrate global network idle + per-process idle into a single monitoring loop.
+- [From Phase 10] **Keep Screen On** — OS API call to prevent screen sleep during active monitoring. The Settings toggle exists but is not wired to backend.
+- [From Phase 10] **Custom Alarm Sound** — File picker for `.mp3`/`.wav` using `tauri-plugin-dialog`. Requires `PlayAlarmAction` to be implemented first.
+- [From Phase 10] **Network Interface Selection** — Manual interface dropdown in settings. Auto-detect works well; this is low priority.
+- [From Phase 10] **Import/Export Config** — Allow users to export and import their settings as a JSON file.
+- [From Phase 9] **File persistence for logs** — Logs are currently in-memory only (1000 entry cap). Saving to Tauri `app_data_dir` would enable persistence across restarts.
+- [From Phase 9] **Log retention by date** — 30-day retention policy. Requires file persistence to be implemented first.
+- [From Phase 9] **Enable/Disable logging toggle** — Settings toggle to turn off activity logging.
+- [From Phase 7] **Process list auto-polling** — Process list is manually refreshed; could auto-refresh on interval.
+- [From Phase 2/7] **PlayAlarmAction** — Audio playback via `rodio` crate. The `Action` trait is ready; needs `rodio` dependency + `PlayAlarmAction` implementation + UI dropdown entry.
+- [From Phase 0/5/10] **ShadCN UI components** — Deferred due to Tailwind v4 incompatibility. Evaluate `shadcn@canary` or continue with custom components.
+- [From Phase 8] **Configurable delay in Settings** — `pre_warning_secs` config field exists and is used; the Settings UI has a number input for it. Verify end-to-end wiring.
 
 ## Depends On
 All prior phases.

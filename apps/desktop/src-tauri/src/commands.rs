@@ -387,6 +387,28 @@ pub async fn reset_settings(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+// ---------------------------------------------------------------------------
+// Tray commands
+// ---------------------------------------------------------------------------
+
+/// Update whether the window close button should minimize to tray.
+#[tauri::command]
+pub async fn set_close_to_tray(
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<(), String> {
+    *state.close_to_tray.lock().await = enabled;
+    Ok(())
+}
+
+/// Get the current close-to-tray preference.
+#[tauri::command]
+pub async fn get_close_to_tray(
+    state: State<'_, AppState>,
+) -> Result<bool, String> {
+    Ok(*state.close_to_tray.lock().await)
+}
+
 /// Trigger type metadata for frontend display.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TriggerInfo {

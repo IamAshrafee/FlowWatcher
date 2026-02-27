@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { SpeedCard } from "@/components/SpeedCard";
 import { TriggerBuilder } from "@/components/TriggerBuilder";
 import { CountdownDialog } from "@/components/CountdownDialog";
@@ -35,6 +36,36 @@ export function DashboardPage() {
     // ── Tauri integration hooks ──
     useSpeedPolling();
     useAppInit();
+
+    // ── Phase 11: Tray event listeners ──
+    useEffect(() => {
+        let unlistenStart: (() => void) | null = null;
+        let unlistenStop: (() => void) | null = null;
+
+        (async () => {
+            unlistenStart = await listen("tray-start-monitoring", async () => {
+                try {
+                    await invoke("start_monitoring", { config });
+                    setStatus({ status: "Monitoring" });
+                } catch (err) {
+                    console.error("Tray start monitoring failed:", err);
+                }
+            });
+            unlistenStop = await listen("tray-stop-monitoring", async () => {
+                try {
+                    await invoke("stop_monitoring");
+                    setStatus({ status: "Idle" });
+                } catch (err) {
+                    console.error("Tray stop monitoring failed:", err);
+                }
+            });
+        })();
+
+        return () => {
+            if (unlistenStart) unlistenStart();
+            if (unlistenStop) unlistenStop();
+        };
+    }, [config, setStatus]);
 
     // ── Phase 8: Safety countdown ──
     const {
@@ -730,6 +761,19 @@ export function SettingsPage() {
                     <ToggleSwitch
                         checked={settings.auto_start}
                         onChange={(v) => updateSettings({ auto_start: v })}
+                    />
+                </SettingsRow>
+                <SettingsRow label="Minimize to Tray" description="Hide to system tray instead of exiting when closing window.">
+                    <ToggleSwitch
+                        checked={settings.minimize_to_tray}
+                        onChange={async (v) => {
+                            updateSettings({ minimize_to_tray: v });
+                            try {
+                                await invoke("set_close_to_tray", { enabled: v });
+                            } catch {
+                                // Silent fail in dev mode.
+                            }
+                        }}
                     />
                 </SettingsRow>
                 <SettingsRow label="Keep Screen On" description="Prevent display sleep while monitoring.">

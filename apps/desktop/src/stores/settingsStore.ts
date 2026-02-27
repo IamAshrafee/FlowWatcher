@@ -55,10 +55,17 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     loadSettings: async () => {
         try {
             const data = await invoke("get_settings");
+            const loaded = { ...DEFAULT_SETTINGS, ...(data as AppSettings) };
             set({
-                settings: { ...DEFAULT_SETTINGS, ...(data as AppSettings) },
+                settings: loaded,
                 isLoaded: true,
             });
+            // Sync minimize_to_tray preference to backend AppState.
+            try {
+                await invoke("set_close_to_tray", { enabled: loaded.minimize_to_tray });
+            } catch {
+                // Silent fail — command may not be available in dev mode.
+            }
         } catch {
             // Use defaults if load fails (e.g., first run or dev mode).
             set({ settings: { ...DEFAULT_SETTINGS }, isLoaded: true });
