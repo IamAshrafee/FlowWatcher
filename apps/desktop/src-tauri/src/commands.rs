@@ -1,0 +1,237 @@
+//! Tauri command handlers — the bridge between frontend and core engine.
+
+use crate::state::{
+    AppState, ConditionConfig, MonitoringConfig, MonitoringStatus, TriggerConfig,
+};
+use flowwatcher_actions::ActionInfo;
+use flowwatcher_conditions::{MonitorMode, ThresholdCondition};
+use flowwatcher_engine::SpeedMonitor;
+use flowwatcher_platform::network::{InterfaceInfo, NetworkProvider};
+use flowwatcher_platform::process::{ProcessInfo, ProcessProvider};
+use serde::{Deserialize, Serialize};
+use tauri::State;
+
+// ---------------------------------------------------------------------------
+// Response types
+// ---------------------------------------------------------------------------
+
+/// Real-time speed data sent to frontend.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpeedData {
+    pub download_bps: u64,
+    pub upload_bps: u64,
+}
+
+// ---------------------------------------------------------------------------
+// Network commands
+// ---------------------------------------------------------------------------
+
+/// Get list of network interfaces.
+#[tauri::command]
+pub async fn get_network_interfaces(
+    state: State<'_, AppState>,
+) -> Result<Vec<InterfaceInfo>, String> {
+    let provider = state.network_provider.lock().await;
+    provider.list_interfaces().map_err(|e| e.to_string())
+}
+
+/// Get current network speed.
+#[tauri::command]
+pub async fn get_current_speed(state: State<'_, AppState>) -> Result<SpeedData, String> {
+    let monitor = state.speed_monitor.lock().await;
+    match monitor.as_ref() {
+        Some(mon) => Ok(SpeedData {
+            download_bps: mon.current_download_speed(),
+            upload_bps: mon.current_upload_speed(),
+        }),
+        None => Ok(SpeedData {
+            download_bps: 0,
+            upload_bps: 0,
+        }),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Monitoring commands
+// ---------------------------------------------------------------------------
+
+/// Start monitoring with a generic trigger/condition/action config.
+#[tauri::command]
+pub async fn start_monitoring(
+    state: State<'_, AppState>,
+    config: MonitoringConfig,
+) -> Result<(), String> {
+    // Determine interface to monitor.
+    let interface_id = match &config.trigger_type {
+        TriggerConfig::NetworkIdle { interface_id } => {
+            if interface_id == "auto" {
+                let provider = state.network_provider.lock().await;
+                provider
+                    .get_default_interface()
+                    .map_err(|e| e.to_string())?
+                    .map(|i| i.id)
+                    .ok_or_else(|| "No network interface found".to_string())?
+            } else {
+                interface_id.clone()
+            }
+        }
+        TriggerConfig::ProcessIdle { .. } => {
+            // Process trigger doesn't need a network interface for speed,
+            // but we still set one up for the speed display.
+            let provider = state.network_provider.lock().await;
+            provider
+                .get_default_interface()
+                .map_err(|e| e.to_string())?
+                .map(|i| i.id)
+                .unwrap_or_else(|| "unknown".to_string())
+        }
+    };
+
+    // Create speed monitor.
+    let monitor = SpeedMonitor::new(interface_id, 3);
+    *state.speed_monitor.lock().await = Some(monitor);
+
+    // Create threshold condition.
+    let mode = match config.condition.monitor_mode.as_str() {
+        "upload_only" => MonitorMode::UploadOnly,
+        "both" => MonitorMode::Both,
+        _ => MonitorMode::DownloadOnly,
+    };
+    let condition = ThresholdCondition::new(
+        config.condition.threshold_bytes_per_sec,
+        config.condition.required_duration_secs,
+        mode,
+    );
+    *state.threshold_condition.lock().await = Some(condition);
+
+    // Reset scheduler with config values.
+    let mut scheduler = state.scheduler.lock().await;
+    *scheduler =
+        flowwatcher_engine::ActionScheduler::new(config.pre_warning_secs, config.countdown_secs);
+
+    // Update status.
+    *state.status.lock().await = MonitoringStatus::Monitoring;
+    *state.config.lock().await = Some(config);
+
+    Ok(())
+}
+
+/// Stop monitoring.
+#[tauri::command]
+pub async fn stop_monitoring(state: State<'_, AppState>) -> Result<(), String> {
+    *state.speed_monitor.lock().await = None;
+    *state.threshold_condition.lock().await = None;
+    state.scheduler.lock().await.reset();
+    *state.status.lock().await = MonitoringStatus::Idle;
+    *state.config.lock().await = None;
+    Ok(())
+}
+
+/// Pause monitoring (keeps state but stops polling).
+#[tauri::command]
+pub async fn pause_monitoring(state: State<'_, AppState>) -> Result<(), String> {
+    let mut status = state.status.lock().await;
+    if *status == MonitoringStatus::Monitoring {
+        *status = MonitoringStatus::Paused;
+        Ok(())
+    } else {
+        Err(format!("Cannot pause: current status is {:?}", *status))
+    }
+}
+
+/// Resume monitoring from paused state.
+#[tauri::command]
+pub async fn resume_monitoring(state: State<'_, AppState>) -> Result<(), String> {
+    let mut status = state.status.lock().await;
+    if *status == MonitoringStatus::Paused {
+        *status = MonitoringStatus::Monitoring;
+        Ok(())
+    } else {
+        Err(format!("Cannot resume: current status is {:?}", *status))
+    }
+}
+
+/// Get current monitoring status.
+#[tauri::command]
+pub async fn get_monitoring_status(
+    state: State<'_, AppState>,
+) -> Result<MonitoringStatus, String> {
+    Ok(state.status.lock().await.clone())
+}
+
+/// Cancel the pending action during countdown.
+#[tauri::command]
+pub async fn cancel_action(state: State<'_, AppState>) -> Result<(), String> {
+    state
+        .scheduler
+        .lock()
+        .await
+        .cancel()
+        .map_err(|e| e.to_string())?;
+    *state.status.lock().await = MonitoringStatus::Monitoring;
+    Ok(())
+}
+
+/// Execute the action immediately during countdown.
+#[tauri::command]
+pub async fn execute_action_now(state: State<'_, AppState>) -> Result<(), String> {
+    state
+        .scheduler
+        .lock()
+        .await
+        .execute_now()
+        .map_err(|e| e.to_string())?;
+    *state.status.lock().await = MonitoringStatus::Executed;
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Process commands
+// ---------------------------------------------------------------------------
+
+/// Get running processes sorted by network usage.
+#[tauri::command]
+pub async fn get_running_processes(
+    state: State<'_, AppState>,
+) -> Result<Vec<ProcessInfo>, String> {
+    let mut provider = state.process_provider.lock().await;
+    provider.get_suggestions(10).map_err(|e| e.to_string())
+}
+
+// ---------------------------------------------------------------------------
+// Discovery commands
+// ---------------------------------------------------------------------------
+
+/// Get list of available trigger types.
+#[tauri::command]
+pub async fn get_available_triggers() -> Result<Vec<TriggerInfo>, String> {
+    Ok(vec![
+        TriggerInfo {
+            id: "network_idle".to_string(),
+            name: "Network Idle".to_string(),
+            description: "Triggers when network speed falls below threshold".to_string(),
+        },
+        TriggerInfo {
+            id: "process_idle".to_string(),
+            name: "Process Monitor".to_string(),
+            description: "Triggers when selected processes have low network activity".to_string(),
+        },
+    ])
+}
+
+/// Get list of available actions.
+#[tauri::command]
+pub async fn get_available_actions() -> Result<Vec<ActionInfo>, String> {
+    Ok(flowwatcher_platform::all_system_actions()
+        .iter()
+        .map(|a| a.info())
+        .collect())
+}
+
+/// Trigger type metadata for frontend display.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TriggerInfo {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+}
