@@ -831,7 +831,7 @@ dependencies = [
 
 [[package]]
 name = "flowwatcher-actions"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "serde",
@@ -840,7 +840,7 @@ dependencies = [
 
 [[package]]
 name = "flowwatcher-conditions"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "flowwatcher-triggers",
  "serde",
@@ -868,7 +868,7 @@ dependencies = [
 
 [[package]]
 name = "flowwatcher-engine"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "flowwatcher-actions",
  "flowwatcher-conditions",
@@ -883,7 +883,7 @@ dependencies = [
 
 [[package]]
 name = "flowwatcher-platform"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "flowwatcher-actions",
@@ -894,7 +894,7 @@ dependencies = [
 
 [[package]]
 name = "flowwatcher-triggers"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "flowwatcher-platform",

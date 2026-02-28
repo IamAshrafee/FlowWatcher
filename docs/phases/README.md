@@ -1,88 +1,92 @@
-# FlowWatcher — Phase Completion Tracker
+# FlowWatcher — Phase Completion Reports
 
-> **Last Audit:** 2026-02-28 00:37 UTC+6
+> This directory contains the completion report for each development phase. Each report documents what was planned, what was actually built, what was deferred, and verification results.
 
-## Completed Phases
+---
 
-| Phase | Title | Date | Status |
-|-------|-------|------|--------|
-| 0 | Project Scaffolding & Repository Foundation | 2026-02-27 | ✅ Complete |
-| 1 | Core Rust Engine: Network Monitoring | 2026-02-27 | ✅ Complete |
-| 2 | Core Rust Engine: Action Execution | 2026-02-27 | ✅ Complete |
-| 3 | Core Rust Engine: Process-Based Monitoring | 2026-02-27 | ✅ Complete |
-| 4 | Tauri Bridge: Connecting Rust to Frontend | 2026-02-27 | ✅ Complete |
-| 5 | Frontend: Design System & Shell | 2026-02-27 | ✅ Complete |
-| 6 | Frontend: Dashboard (Core Monitoring UI) | 2026-02-27 | ✅ Complete |
-| 7 | Frontend: Advanced Mode (Process Selection UI) | 2026-02-27 | ✅ Complete |
-| 8 | Safety UI: Countdown & Warning System | 2026-02-27 | ✅ Complete |
-| 9 | Activity Logging | 2026-02-27 | ✅ Complete |
-| 10 | Settings, Persistence & Configuration | 2026-02-28 | ✅ Complete |
+## Phase Status Summary
 
-## Upcoming Phases
-
-| Phase | Title | Status |
-|-------|-------|--------|
-| 11 | System Tray & Background Operation | 📋 Not Started |
-| 12 | Internationalization Foundation | 📋 Not Started |
-| 13 | CI/CD & Code Quality Automation | 📋 Not Started |
-| 14 | Polish, Performance & Edge Cases | 📋 Not Started |
-| 15 | Release Preparation & Open Source Launch | 📋 Not Started |
+| Phase | Name | Status | Date |
+|-------|------|--------|------|
+| 0 | Project Scaffolding & Repository Foundation | ✅ Complete | 2026-02-27 |
+| 1 | Core Rust Engine: Network Monitoring | ✅ Complete | 2026-02-27 |
+| 2 | Core Rust Engine: Action Execution | ✅ Complete | 2026-02-27 |
+| 3 | Core Rust Engine: Process-Based Monitoring | ✅ Complete | 2026-02-27 |
+| 4 | Tauri Bridge: Connecting Rust to Frontend | ✅ Complete | 2026-02-27 |
+| 5 | Frontend: Design System & Shell | ✅ Complete | 2026-02-27 |
+| 6 | Frontend: Dashboard (Core Monitoring UI) | ✅ Complete | 2026-02-27 |
+| 7 | Frontend: Advanced Mode (Process Selection UI) | ✅ Complete | 2026-02-27 |
+| 8 | Safety UI: Countdown & Warning System | ✅ Complete | 2026-02-27 |
+| 9 | Activity Logging | ✅ Complete | 2026-02-27 |
+| 10 | Settings, Persistence & Configuration | ✅ Complete | 2026-02-27 |
+| 11 | System Tray & Background Operation | ✅ Complete | 2026-02-28 |
+| 12 | Internationalization Foundation | ✅ Complete | 2026-02-28 |
+| 13 | CI/CD & Code Quality Automation | ✅ Complete | 2026-02-28 |
+| 14 | Polish, Performance & Edge Cases | ✅ Complete | 2026-02-28 |
+| 15 | Release Preparation & Open Source Launch | ✅ Complete | 2026-03-01 |
 
 ---
 
 ## Deferred Items Tracker
 
-Items deferred from completed phases that must be picked up in future phases. These have been injected into the roadmap under **"Deferred Items (from earlier phases)"** sections.
+> **Last audited:** 2026-03-01
 
-### Target: Phase 11 — System Tray & Background Operation
+All items below were deferred during initial development. They are tracked in [`ROADMAP.md`](../../ROADMAP.md) under their target release versions.
 
-| Deferred Item | From | Reason |
-|---------------|------|--------|
-| Custom Titlebar (`decorations: false`) | Phase 5 | Using OS decorations for now; drag region ready in AppShell |
-| Tauri tray capabilities | Phase 4 | Permission plugins deferred until tray feature built |
-| Auto-Start Plugin (`tauri-plugin-autostart`) | Phase 10 | UI toggle exists but not wired to plugin |
-| OS-level notifications | Phase 8 | Tauri notification plugin for pre-warning when minimized |
+### Engine & Backend (6 items)
 
-### Target: Phase 12 — Internationalization
+| Item | Deferred From | Target |
+|------|---------------|--------|
+| Event streaming via `app.emit()` | Phase 4, 6, 8 | v0.2.0 |
+| `NetworkIdleTrigger` struct orchestration | Phase 1, 8, 14 | v0.2.0 |
+| Combined trigger logic (global + process) | Phase 3, 7 | v0.2.0 |
+| PlayAlarmAction (`rodio` audio) | Phase 2, 7, 10, 14 | v0.2.0 |
+| Custom alarm sound file picker | Phase 10, 14 | v0.2.0 |
+| Auto-start plugin runtime wiring | Phase 10, 11, 14 | v0.2.0 |
 
-| Deferred Item | From | Reason |
-|---------------|------|--------|
-| Language selector wiring | Phase 10 | Placeholder dropdown exists; needs i18next connection |
+### Data & Persistence (4 items)
 
-### Target: Phase 14 — Polish, Performance & Edge Cases
+| Item | Deferred From | Target |
+|------|---------------|--------|
+| File persistence for activity logs | Phase 9 | v0.2.0 |
+| Log retention by date (30-day policy) | Phase 9 | v0.2.0 |
+| Enable/disable logging toggle | Phase 9 | v0.2.0 |
+| Config import/export via file | Phase 10 | v0.2.0 |
 
-| Deferred Item | From | Reason |
-|---------------|------|--------|
-| True per-process network via ETW | Phase 3 | Using disk I/O proxy; ETW is complex |
-| Tauri auto-start capability registration | Phase 4 | Permission plugin needs capabilities config |
-| Event streaming runtime (`app.emit()`) | Phase 4/8 | Using polling/setInterval; needs tokio background task |
-| `NetworkIdleTrigger` struct | Phase 1/8 | Concrete trigger combining SpeedMonitor + ThresholdCondition |
-| Combined trigger logic | Phase 3/8 | Orchestrate global + process idle into one loop |
-| Keep Screen On | Phase 10 | Toggle exists; needs OS API call |
-| Custom Alarm Sound | Phase 10 | Needs `tauri-plugin-dialog` file picker + PlayAlarmAction |
-| Network Interface Selection | Phase 10 | Auto-detect works; manual dropdown is low priority |
-| Import/Export Config | Phase 10 | Allow JSON config export/import |
-| File persistence for logs | Phase 9 | In-memory only (1000 cap); needs Tauri `app_data_dir` |
-| Log retention by date | Phase 9 | 30-day retention; requires file persistence first |
-| Enable/Disable logging toggle | Phase 9 | Settings toggle for activity logging |
-| Process list auto-polling | Phase 7 | Currently manual refresh only |
-| PlayAlarmAction (audio) | Phase 2/7 | Needs `rodio` crate + Action impl + UI entry |
-| ShadCN UI components | Phase 0/5/10 | Tailwind v4 incompatibility; evaluate `shadcn@canary` |
-| Configurable delay verification | Phase 8 | `pre_warning_secs` exists; verify end-to-end wiring |
+### Frontend & UX (5 items)
 
-### Resolved (picked up in later phases)
+| Item | Deferred From | Target |
+|------|---------------|--------|
+| Process list auto-refresh | Phase 7, 14 | v0.2.0 |
+| Hibernate validation UX | Phase 14 | v0.2.0 |
+| Dynamic tray tooltip (live speed) | Phase 11 | v0.2.0 |
+| Tray icon state changes | Phase 11 | v0.2.0 |
+| Network interface manual selection | Phase 10 | v0.2.0 |
 
-| Deferred Item | From | Resolved In |
-|---------------|------|-------------|
-| `get_activity_logs` command | Phase 4 | ✅ Phase 9 |
-| `get_settings`/`save_settings` commands | Phase 4 | ✅ Phase 10 |
+### Internationalization (3 items)
 
-### User Discretion
+| Item | Deferred From | Target |
+|------|---------------|--------|
+| RTL layout support | Phase 12 | When RTL language contributed |
+| Date/number formatting via `Intl` | Phase 12 | v0.2.0 |
+| Toast notification string check | Phase 12 | v0.2.0 |
 
-| Deferred Item | From | Notes |
-|---------------|------|-------|
-| Git branching (`dev` branch) | Phase 0 | User managing Git workflow manually |
+### Infrastructure (2 items)
+
+| Item | Deferred From | Target |
+|------|---------------|--------|
+| ShadCN UI migration (Tailwind v4) | Phase 0, 5, 14 | v0.2.0 |
+| Custom titlebar (OS decorations) | Phase 5 | v0.2.0 |
+
+### Advanced (1 item)
+
+| Item | Deferred From | Target |
+|------|---------------|--------|
+| Per-process network via ETW | Phase 3, 14 | v0.5.0 |
 
 ---
 
-> Run `/audit-deferred` after any phase completion to keep this tracker and the roadmap in sync.
+**Total deferred items: 21**
+- v0.2.0 targets: 19 items
+- v0.5.0 targets: 1 item
+- Conditional (RTL): 1 item
