@@ -46,6 +46,13 @@ FlowWatcher monitors your network speed (globally or per-process) and automatica
 
 ---
 
+## Screenshoots
+<img width="880" height="609" alt="image" src="https://github.com/user-attachments/assets/a9ad83e6-1e9b-4f7c-94c7-5cb2f17feeb4" />
+
+<img width="893" height="601" alt="image" src="https://github.com/user-attachments/assets/21afec72-1bb8-4cd3-8d1c-809838ddfbac" />
+
+<img width="888" height="604" alt="image" src="https://github.com/user-attachments/assets/b681999b-9d9a-4c40-962e-7bb135abb853" />
+
 ## 🏗️ Architecture
 
 FlowWatcher follows a **modular, extensible architecture** designed for future expansion beyond network monitoring:
