@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlowWatcher — Intelligent Network Monitor & System Controller</title>
+    <meta name="description"
+        content="Lightweight, privacy-first desktop utility that watches your network activity and automatically performs system actions when downloads complete." />
+    <meta name="keywords"
+        content="FlowWatcher, network monitor, auto shutdown, download monitor, system automation, Tauri, Rust" />
+    <meta property="og:title" content="FlowWatcher — Intelligent Network Monitor" />
+    <meta property="og:description"
+        content="Auto-shutdown, sleep, or hibernate when your downloads finish. Privacy-first. Open source." />
+    <meta property="og:type" content="website" />
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%230B0D11' stroke='%233ABAB4' stroke-width='6'/><circle cx='50' cy='50' r='8' fill='%233ABAB4'><animate attributeName='r' values='8;12;8' dur='2s' repeatCount='indefinite'/></circle></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+            scroll-padding-top: 80px
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0B0D11;
+            color: #E2E8F0;
+            overflow-x: hidden;
+            line-height: 1.6
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block
+        }
+
+        /* AMBIENT */
+        .ambient-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden
+        }
+
+        .ambient-bg .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5
+        }
+
+        .orb-1 {
+            width: 700px;
+            height: 700px;
+            top: -200px;
+            left: -150px;
+            background: rgba(58, 186, 180, 0.07);
+            animation: orbit1 30s ease-in-out infinite
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            bottom: -100px;
+            right: -100px;
+            background: rgba(99, 102, 241, 0.05);
+            animation: orbit2 25s ease-in-out infinite
+        }
+
+        .orb-3 {
+            width: 400px;
+            height: 400px;
+            top: 40%;
+            left: 60%;
+            background: rgba(236, 72, 153, 0.03);
+            animation: orbit3 35s ease-in-out infinite
+        }
+
+        @keyframes orbit1 {
+
+            0%,
+            100% {
+                transform: translate(0, 0)
+            }
+
+            33% {
+                transform: translate(120px, 80px)
+            }
+
+            66% {
+                transform: translate(-50px, 150px)
+            }
+        }
+
+        @keyframes orbit2 {
+
+            0%,
+            100% {
+                transform: translate(0, 0)
+            }
+
+            50% {
+                transform: translate(-100px, -80px)
+            }
+        }
+
+        @keyframes orbit3 {
+
+            0%,
+            100% {
+                transform: translate(0, 0)
+            }
+
+            33% {
+                transform: translate(-80px, 60px)
+            }
+
+            66% {
+                transform: translate(60px, -40px)
+            }
+        }
+
+        /* PARTICLES */
+        .particles {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: rgba(58, 186, 180, 0.3);
+            border-radius: 50%;
+            animation: drift linear infinite
+        }
+
+        @keyframes drift {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0
+            }
+
+            10% {
+                opacity: 1
+            }
+
+            90% {
+                opacity: 1
+            }
+
+            100% {
+                transform: translateY(-10vh) scale(1);
+                opacity: 0
+            }
+        }
+
+        /* SCROLL REVEAL */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0)
+        }
+
+        .reveal-left {
+            opacity: 0;
+            transform: translateX(-40px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)
+        }
+
+        .reveal-left.visible {
+            opacity: 1;
+            transform: translateX(0)
+        }
+
+        .reveal-right {
+            opacity: 0;
+            transform: translateX(40px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)
+        }
+
+        .reveal-right.visible {
+            opacity: 1;
+            transform: translateX(0)
+        }
+
+        .reveal-scale {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.8s ease, transform 0.8s ease
+        }
+
+        .reveal-scale.visible {
+            opacity: 1;
+            transform: scale(1)
+        }
+
+        .stagger-1 {
+            transition-delay: 0.1s
+        }
+
+        .stagger-2 {
+            transition-delay: 0.2s
+        }
+
+        .stagger-3 {
+            transition-delay: 0.3s
+        }
+
+        .stagger-4 {
+            transition-delay: 0.4s
+        }
+
+        .stagger-5 {
+            transition-delay: 0.5s
+        }
+
+        .stagger-6 {
+            transition-delay: 0.6s
+        }
+
+        .stagger-7 {
+            transition-delay: 0.7s
+        }
+
+        .stagger-8 {
+            transition-delay: 0.8s
+        }
+
+        .stagger-9 {
+            transition-delay: 0.9s
+        }
+
+        /* NAV */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1rem 2rem;
+            backdrop-filter: blur(20px);
+            background: rgba(11, 13, 17, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s
+        }
+
+        nav.scrolled {
+            background: rgba(11, 13, 17, 0.95);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3)
+        }
+
+        .nav-logo {
+            font-weight: 800;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem
+        }
+
+        .nav-logo .dot {
+            width: 8px;
+            height: 8px;
+            background: #3ABAB4;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(58, 186, 180, 0.5);
+            animation: pulse 2s ease-in-out infinite
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: scale(1.3)
+            }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center
+        }
+
+        .nav-links a {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #94A3B8;
+            transition: color 0.2s;
+            position: relative
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #3ABAB4;
+            transition: width 0.3s
+        }
+
+        .nav-links a:hover {
+            color: #E2E8F0
+        }
+
+        .nav-links a:hover::after {
+            width: 100%
+        }
+
+        .nav-cta {
+            background: #3ABAB4 !important;
+            color: #0B0D11 !important;
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.2s
+        }
+
+        .nav-cta::after {
+            display: none !important
+        }
+
+        .nav-cta:hover {
+            background: #4DD4CE !important;
+            transform: translateY(-1px)
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 4px;
+            border: none;
+            background: none
+        }
+
+        .hamburger span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: #E2E8F0;
+            border-radius: 2px;
+            transition: all 0.3s
+        }
+
+        .hamburger.open span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px)
+        }
+
+        .hamburger.open span:nth-child(2) {
+            opacity: 0
+        }
+
+        .hamburger.open span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px)
+        }
+
+        .mobile-menu {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            z-index: 99;
+            background: rgba(11, 13, 17, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            transform: translateY(-20px);
+            opacity: 0;
+            pointer-events: none;
+            visibility: hidden;
+            transition: all 0.3s
+        }
+
+        .mobile-menu.open {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+            visibility: visible
+        }
+
+        .mobile-menu a {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #94A3B8;
+            padding: 0.75rem 0;
+            display: block;
+            position: relative;
+            z-index: 100
+        }
+
+        .mobile-menu a:hover,
+        .mobile-menu a:active {
+            color: #E2E8F0
+        }
+
+        /* HERO */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 8rem 2rem 4rem;
+            position: relative
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 1rem;
+            background: rgba(58, 186, 180, 0.1);
+            border: 1px solid rgba(58, 186, 180, 0.2);
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #3ABAB4;
+            margin-bottom: 2rem;
+            animation: badgePulse 3s ease-in-out infinite
+        }
+
+        @keyframes badgePulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(58, 186, 180, 0.1)
+            }
+
+            50% {
+                box-shadow: 0 0 0 12px rgba(58, 186, 180, 0)
+            }
+        }
+
+        .hero-badge .badge-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #3ABAB4
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 900;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            max-width: 800px;
+            margin-bottom: 1.5rem
+        }
+
+        .hero h1 .accent {
+            color: #3ABAB4;
+            position: relative
+        }
+
+        .hero h1 .accent::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3ABAB4, transparent);
+            border-radius: 2px
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            color: #94A3B8;
+            max-width: 600px;
+            margin-bottom: 2.5rem;
+            line-height: 1.7
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 2rem;
+            background: #3ABAB4;
+            color: #0B0D11;
+            border-radius: 12px;
+            border: none;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s
+        }
+
+        .btn-primary:hover::before {
+            width: 300px;
+            height: 300px
+        }
+
+        .btn-primary:hover {
+            background: #4DD4CE;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(58, 186, 180, 0.3)
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.875rem 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #E2E8F0;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px)
+        }
+
+        /* HERO SCREENSHOT */
+        .hero-screenshot {
+            margin-top: 4rem;
+            max-width: 900px;
+            width: 100%;
+            position: relative
+        }
+
+        .hero-screenshot img {
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03)
+        }
+
+        .hero-screenshot::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(58, 186, 180, 0.2), transparent 40%, transparent 60%, rgba(99, 102, 241, 0.15));
+            z-index: -1;
+            animation: borderGlow 4s ease-in-out infinite alternate
+        }
+
+        @keyframes borderGlow {
+            0% {
+                opacity: 0.5
+            }
+
+            100% {
+                opacity: 1
+            }
+        }
+
+        .hero-float {
+            animation: heroFloat 6s ease-in-out infinite
+        }
+
+        @keyframes heroFloat {
+
+            0%,
+            100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-12px)
+            }
+        }
+
+        /* SECTIONS */
+        section {
+            padding: 6rem 2rem
+        }
+
+        .section-inner {
+            max-width: 1100px;
+            margin: 0 auto
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: #3ABAB4;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem
+        }
+
+        .section-label::before {
+            content: '';
+            width: 20px;
+            height: 2px;
+            background: #3ABAB4;
+            border-radius: 2px
+        }
+
+        .section-title {
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 1rem
+        }
+
+        .section-desc {
+            font-size: 1.1rem;
+            color: #94A3B8;
+            max-width: 600px;
+            line-height: 1.7
+        }
+
+        /* HOW IT WORKS */
+        .steps-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem
+        }
+
+        .step-card {
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden
+        }
+
+        .step-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #3ABAB4, transparent);
+            transform: scaleX(0);
+            transition: transform 0.4s
+        }
+
+        .step-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(58, 186, 180, 0.2);
+            transform: translateY(-6px)
+        }
+
+        .step-card:hover::before {
+            transform: scaleX(1)
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(58, 186, 180, 0.1);
+            border-radius: 10px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: #3ABAB4;
+            margin-bottom: 1.25rem;
+            transition: all 0.3s
+        }
+
+        .step-card:hover .step-number {
+            background: rgba(58, 186, 180, 0.2);
+            transform: scale(1.1)
+        }
+
+        .step-card h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem
+        }
+
+        .step-card p {
+            font-size: 0.95rem;
+            color: #94A3B8;
+            line-height: 1.6
+        }
+
+        /* FEATURES */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 3rem
+        }
+
+        .feature-card {
+            padding: 1.75rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden
+        }
+
+        .feature-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(58, 186, 180, 0.05), transparent 50%);
+            opacity: 0;
+            transition: opacity 0.4s
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(58, 186, 180, 0.15);
+            transform: translateY(-4px)
+        }
+
+        .feature-card:hover::after {
+            opacity: 1
+        }
+
+        .feature-icon {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1
+        }
+
+        .feature-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1
+        }
+
+        .feature-card p {
+            font-size: 0.875rem;
+            color: #94A3B8;
+            line-height: 1.5;
+            position: relative;
+            z-index: 1
+        }
+
+        /* SCREENSHOTS */
+        .screenshots-section {
+            background: rgba(255, 255, 255, 0.01)
+        }
+
+        .screenshot-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap
+        }
+
+        .screenshot-tab {
+            padding: 0.5rem 1.25rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #94A3B8;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-family: inherit
+        }
+
+        .screenshot-tab:hover {
+            color: #E2E8F0;
+            background: rgba(255, 255, 255, 0.06)
+        }
+
+        .screenshot-tab.active {
+            background: rgba(58, 186, 180, 0.15);
+            color: #3ABAB4;
+            box-shadow: 0 0 20px rgba(58, 186, 180, 0.1)
+        }
+
+        .screenshot-pair {
+            display: none
+        }
+
+        .screenshot-pair.active {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem
+        }
+
+        .screenshot-frame {
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            opacity: 0;
+            transform: scale(0.95);
+            animation: ssReveal 0.6s ease forwards
+        }
+
+        .screenshot-frame:nth-child(2) {
+            animation-delay: 0.15s
+        }
+
+        @keyframes ssReveal {
+            to {
+                opacity: 1;
+                transform: scale(1)
+            }
+        }
+
+        .screenshot-frame img {
+            width: 100%;
+            display: block;
+            transition: transform 0.5s
+        }
+
+        .screenshot-frame:hover img {
+            transform: scale(1.03)
+        }
+
+        .screenshot-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.75rem 1rem;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8)
+        }
+
+        /* ARCHITECTURE */
+        .arch-diagram {
+            margin-top: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap
+        }
+
+        .arch-box {
+            padding: 1.5rem 2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            text-align: center;
+            min-width: 200px;
+            transition: all 0.4s
+        }
+
+        .arch-box:hover {
+            border-color: rgba(58, 186, 180, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(58, 186, 180, 0.08)
+        }
+
+        .arch-box h4 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #3ABAB4
+        }
+
+        .arch-box p {
+            font-size: 0.8rem;
+            color: #94A3B8;
+            line-height: 1.4
+        }
+
+        .arch-arrow {
+            font-size: 1.5rem;
+            color: #3ABAB4;
+            font-weight: 700;
+            animation: arrowBounce 2s ease-in-out infinite
+        }
+
+        @keyframes arrowBounce {
+
+            0%,
+            100% {
+                transform: translateX(0)
+            }
+
+            50% {
+                transform: translateX(6px)
+            }
+        }
+
+        .tech-grid {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2.5rem;
+            flex-wrap: wrap;
+            justify-content: center
+        }
+
+        .tech-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 100px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #CBD5E1;
+            transition: all 0.3s
+        }
+
+        .tech-pill:hover {
+            border-color: rgba(58, 186, 180, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2)
+        }
+
+        .tech-pill .tech-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%
+        }
+
+        /* ROADMAP */
+        .roadmap-timeline {
+            margin-top: 3rem;
+            position: relative;
+            padding-left: 2rem
+        }
+
+        .roadmap-timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #3ABAB4, rgba(58, 186, 180, 0.1))
+        }
+
+        .roadmap-item {
+            position: relative;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            transition: all 0.4s
+        }
+
+        .roadmap-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(58, 186, 180, 0.15);
+            transform: translateX(8px)
+        }
+
+        .roadmap-item::before {
+            content: '';
+            position: absolute;
+            left: -1.65rem;
+            top: 1.75rem;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid #3ABAB4;
+            background: #0B0D11;
+            z-index: 1
+        }
+
+        .roadmap-item.done::before {
+            background: #3ABAB4;
+            box-shadow: 0 0 10px rgba(58, 186, 180, 0.4)
+        }
+
+        .roadmap-item .version {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #3ABAB4;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem
+        }
+
+        .roadmap-item .version .tag {
+            font-size: 0.65rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 100px;
+            font-weight: 600
+        }
+
+        .tag-done {
+            background: rgba(58, 186, 180, 0.15);
+            color: #3ABAB4
+        }
+
+        .tag-planned {
+            background: rgba(148, 163, 184, 0.1);
+            color: #94A3B8
+        }
+
+        .roadmap-item h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem
+        }
+
+        .roadmap-item p {
+            font-size: 0.9rem;
+            color: #94A3B8;
+            line-height: 1.5
+        }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            padding: 6rem 2rem
+        }
+
+        .cta-card {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 4rem 3rem;
+            background: linear-gradient(135deg, rgba(58, 186, 180, 0.05), rgba(99, 102, 241, 0.03));
+            border: 1px solid rgba(58, 186, 180, 0.1);
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden
+        }
+
+        .cta-card::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(58, 186, 180, 0.1), transparent 70%);
+            animation: ctaOrb 8s ease-in-out infinite alternate
+        }
+
+        @keyframes ctaOrb {
+            0% {
+                transform: translate(0, 0)
+            }
+
+            100% {
+                transform: translate(-40px, 40px)
+            }
+        }
+
+        .cta-card h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            position: relative
+        }
+
+        .cta-card p {
+            color: #94A3B8;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            position: relative
+        }
+
+        .cta-card .hero-actions {
+            position: relative
+        }
+
+        /* FOOTER */
+        footer {
+            padding: 3rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            text-align: center
+        }
+
+        footer p {
+            color: #64748B;
+            font-size: 0.875rem
+        }
+
+        footer a {
+            color: #3ABAB4
+        }
+
+        footer a:hover {
+            text-decoration: underline
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-bottom: 1.5rem
+        }
+
+        .footer-links a {
+            color: #94A3B8;
+            font-size: 0.875rem;
+            font-weight: 500
+        }
+
+        .footer-links a:hover {
+            color: #E2E8F0
+        }
+
+        /* RESPONSIVE */
+        @media(max-width:768px) {
+            .nav-links {
+                display: none
+            }
+
+            .hamburger {
+                display: flex
+            }
+
+            .steps-grid,
+            .features-grid {
+                grid-template-columns: 1fr
+            }
+
+            .screenshot-pair.active {
+                grid-template-columns: 1fr
+            }
+
+            .arch-diagram {
+                flex-direction: column
+            }
+
+            .arch-arrow {
+                transform: rotate(90deg)
+            }
+
+            .arch-arrow {
+                animation: arrowBounceV 2s ease-in-out infinite
+            }
+
+            .cta-card {
+                padding: 2.5rem 1.5rem
+            }
+
+            section {
+                padding: 4rem 1.25rem
+            }
+
+            .roadmap-timeline {
+                padding-left: 1.5rem
+            }
+        }
+
+        @keyframes arrowBounceV {
+
+            0%,
+            100% {
+                transform: rotate(90deg) translateX(0)
+            }
+
+            50% {
+                transform: rotate(90deg) translateX(6px)
+            }
+        }
+
+        @media(min-width:769px) and (max-width:1024px) {
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+    <div class="particles" id="particles"></div>
+
+    <!-- NAV -->
+    <nav>
+        <div class="nav-logo"><span class="dot"></span> FlowWatcher</div>
+        <div class="nav-links">
+            <a href="#how-it-works">How It Works</a>
+            <a href="#features">Features</a>
+            <a href="#screenshots">Screenshots</a>
+            <a href="#architecture">Architecture</a>
+            <a href="#roadmap">Roadmap</a>
+            <a href="https://github.com/IamAshrafee/FlowWatcher" class="nav-cta">⭐ Star on GitHub</a>
+        </div>
+        <button class="hamburger" id="hamburger" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#how-it-works" onclick="closeMobile()">How It Works</a>
+        <a href="#features" onclick="closeMobile()">Features</a>
+        <a href="#screenshots" onclick="closeMobile()">Screenshots</a>
+        <a href="#architecture" onclick="closeMobile()">Architecture</a>
+        <a href="#roadmap" onclick="closeMobile()">Roadmap</a>
+        <a href="https://github.com/IamAshrafee/FlowWatcher" class="nav-cta" style="text-align:center;display:block">⭐
+            Star on GitHub</a>
+    </div>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-badge"><span class="badge-dot"></span> v0.1.0 — Foundation Release</div>
+        <h1>Stop watching your<br />downloads. <span class="accent">Let FlowWatcher.</span></h1>
+        <p>Lightweight desktop utility that monitors your network activity and automatically shuts down, sleeps, or
+            hibernates your PC when downloads complete. Privacy-first. Open source.</p>
+        <div class="hero-actions">
+            <a href="https://github.com/IamAshrafee/FlowWatcher/releases" class="btn-primary">↓ Download for Windows</a>
+            <a href="https://github.com/IamAshrafee/FlowWatcher" class="btn-secondary">View on GitHub →</a>
+        </div>
+        <div class="hero-screenshot hero-float">
+            <img src="images/v-0.1.0/Dashboard-Dark.png" alt="FlowWatcher Dashboard" />
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how-it-works">
+        <div class="section-inner">
+            <p class="section-label reveal">How It Works</p>
+            <h2 class="section-title reveal">Three steps. Zero effort.</h2>
+            <p class="section-desc reveal">Configure once, forget forever. FlowWatcher runs silently and handles
+                everything.</p>
+            <div class="steps-grid">
+                <div class="step-card reveal stagger-1">
+                    <div class="step-number">1</div>
+                    <h3>Set Your Trigger</h3>
+                    <p>Use the natural language builder — <em>"When download is below 200 KB/s for 2 min, then shut
+                            down"</em> — to configure exactly when to act.</p>
+                </div>
+                <div class="step-card reveal stagger-2">
+                    <div class="step-number">2</div>
+                    <h3>Start & Minimize</h3>
+                    <p>Click "Start Monitoring" and minimize to the system tray. Go to sleep, go to work, go do
+                        anything.</p>
+                </div>
+                <div class="step-card reveal stagger-3">
+                    <div class="step-number">3</div>
+                    <h3>Automatic Action</h3>
+                    <p>When activity drops, FlowWatcher warns you with a countdown. Cancel anytime, or let it execute
+                        automatically.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features">
+        <div class="section-inner">
+            <p class="section-label reveal">Features</p>
+            <h2 class="section-title reveal">Everything you need, nothing you don't.</h2>
+            <p class="section-desc reveal">Built for power users who want control without complexity.</p>
+            <div class="features-grid">
+                <div class="feature-card reveal stagger-1">
+                    <div class="feature-icon">📡</div>
+                    <h3>Real-Time Monitoring</h3>
+                    <p>Live download & upload speed tracking with sparkline graphs, updated every second.</p>
+                </div>
+                <div class="feature-card reveal stagger-2">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Process-Aware</h3>
+                    <p>Watch specific apps like Steam or qBittorrent instead of global traffic. Smart suggestions
+                        included.</p>
+                </div>
+                <div class="feature-card reveal stagger-3">
+                    <div class="feature-icon">⚡</div>
+                    <h3>6 System Actions</h3>
+                    <p>Shutdown, Restart, Sleep, Hibernate, Lock Screen, Sign Out — with OS-level validation.</p>
+                </div>
+                <div class="feature-card reveal stagger-4">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>Safety Countdown</h3>
+                    <p>1-minute pre-warning + 30-second visible countdown. Cancel with one click or Escape.</p>
+                </div>
+                <div class="feature-card reveal stagger-5">
+                    <div class="feature-icon">🖥️</div>
+                    <h3>System Tray</h3>
+                    <p>Minimize to tray and monitor silently. Restores automatically when a trigger fires.</p>
+                </div>
+                <div class="feature-card reveal stagger-6">
+                    <div class="feature-icon">🌙</div>
+                    <h3>Dark & Light Themes</h3>
+                    <p>Beautiful matte aesthetic in both modes. Auto-detects your OS preference.</p>
+                </div>
+                <div class="feature-card reveal stagger-7">
+                    <div class="feature-icon">📋</div>
+                    <h3>Activity Logging</h3>
+                    <p>Full history of every monitoring session with search, filter, and export to JSON or TXT.</p>
+                </div>
+                <div class="feature-card reveal stagger-8">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Privacy-First</h3>
+                    <p>No telemetry, no cloud, no accounts. Everything runs and stays on your machine.</p>
+                </div>
+                <div class="feature-card reveal stagger-9">
+                    <div class="feature-icon">🌍</div>
+                    <h3>i18n Ready</h3>
+                    <p>Multi-language support from day one. Contributors can add translations easily.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SCREENSHOTS -->
+    <section id="screenshots" class="screenshots-section">
+        <div class="section-inner">
+            <p class="section-label reveal">Screenshots</p>
+            <h2 class="section-title reveal">See it in action.</h2>
+            <p class="section-desc reveal">Clean, modern interface in both dark and light modes.</p>
+            <div class="screenshot-tabs reveal">
+                <button class="screenshot-tab active" onclick="showScreenshots('dashboard',this)">Dashboard</button>
+                <button class="screenshot-tab" onclick="showScreenshots('advanced',this)">Advanced</button>
+                <button class="screenshot-tab" onclick="showScreenshots('logs',this)">Logs</button>
+                <button class="screenshot-tab" onclick="showScreenshots('settings',this)">Settings</button>
+            </div>
+            <div class="screenshot-pair active reveal-scale" id="screenshots-dashboard">
+                <div class="screenshot-frame"><img src="images/v-0.1.0/Dashboard-Dark.png" alt="Dashboard — Dark" />
+                    <div class="screenshot-label">Dark Mode</div>
+                </div>
+                <div class="screenshot-frame"><img src="images/v-0.1.0/dashboard-light.png" alt="Dashboard — Light" />
+                    <div class="screenshot-label">Light Mode</div>
+                </div>
+            </div>
+            <div class="screenshot-pair" id="screenshots-advanced">
+                <div class="screenshot-frame"><img src="images/v-0.1.0/Advanced-Dark.png" alt="Advanced — Dark" />
+                    <div class="screenshot-label">Dark Mode</div>
+                </div>
+                <div class="screenshot-frame"><img src="images/v-0.1.0/advanced-light.png" alt="Advanced — Light" />
+                    <div class="screenshot-label">Light Mode</div>
+                </div>
+            </div>
+            <div class="screenshot-pair" id="screenshots-logs">
+                <div class="screenshot-frame"><img src="images/v-0.1.0/logs-dark.png" alt="Logs — Dark" />
+                    <div class="screenshot-label">Dark Mode</div>
+                </div>
+                <div class="screenshot-frame"><img src="images/v-0.1.0/logs-light.png" alt="Logs — Light" />
+                    <div class="screenshot-label">Light Mode</div>
+                </div>
+            </div>
+            <div class="screenshot-pair" id="screenshots-settings">
+                <div class="screenshot-frame"><img src="images/v-0.1.0/Settings-Dark.png" alt="Settings — Dark" />
+                    <div class="screenshot-label">Dark Mode</div>
+                </div>
+                <div class="screenshot-frame"><img src="images/v-0.1.0/settings-light.png" alt="Settings — Light" />
+                    <div class="screenshot-label">Light Mode</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture">
+        <div class="section-inner">
+            <p class="section-label reveal">Architecture</p>
+            <h2 class="section-title reveal">Built to last. Built to extend.</h2>
+            <p class="section-desc reveal">Modular Rust engine with trait-based extensibility. Add new triggers,
+                conditions, or actions without touching existing code.</p>
+            <div class="arch-diagram reveal">
+                <div class="arch-box reveal-left stagger-1">
+                    <h4>Trigger Engine</h4>
+                    <p>Detects events<br />Network idle, Process exit</p>
+                </div>
+                <span class="arch-arrow">→</span>
+                <div class="arch-box reveal stagger-2">
+                    <h4>Condition Engine</h4>
+                    <p>Evaluates rules<br />Threshold + Duration</p>
+                </div>
+                <span class="arch-arrow">→</span>
+                <div class="arch-box reveal-right stagger-3">
+                    <h4>Action Engine</h4>
+                    <p>Executes commands<br />Shutdown, Sleep, Lock</p>
+                </div>
+            </div>
+            <div class="tech-grid reveal" style="margin-top:3rem">
+                <div class="tech-pill"><span class="tech-dot" style="background:#DEA584"></span> Rust</div>
+                <div class="tech-pill"><span class="tech-dot" style="background:#61DAFB"></span> React 19</div>
+                <div class="tech-pill"><span class="tech-dot" style="background:#3178C6"></span> TypeScript</div>
+                <div class="tech-pill"><span class="tech-dot" style="background:#FFC131"></span> Tauri 2.0</div>
+                <div class="tech-pill"><span class="tech-dot" style="background:#646CFF"></span> Vite</div>
+                <div class="tech-pill"><span class="tech-dot" style="background:#38BDF8"></span> Tailwind CSS</div>
+                <div class="tech-pill"><span class="tech-dot" style="background:#764ABC"></span> Zustand</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ROADMAP -->
+    <section id="roadmap">
+        <div class="section-inner">
+            <p class="section-label reveal">Roadmap</p>
+            <h2 class="section-title reveal">Where we're headed.</h2>
+            <p class="section-desc reveal">FlowWatcher is just getting started. Here's what's coming next.</p>
+            <div class="roadmap-timeline">
+                <div class="roadmap-item done reveal stagger-1">
+                    <div class="version">v0.1.0 <span class="tag tag-done">✅ Released</span></div>
+                    <h3>Foundation Release</h3>
+                    <p>Real-time network monitoring, process-aware tracking, 6 system actions, safety countdown, system
+                        tray, activity logging, dark/light themes, i18n foundation, CI/CD automation.</p>
+                </div>
+                <div class="roadmap-item reveal stagger-2">
+                    <div class="version">v0.2.0 <span class="tag tag-planned">📋 Planned</span></div>
+                    <h3>Refinements & Deferred Items</h3>
+                    <p>Play Alarm action, event streaming, log file persistence, auto-start wiring, config
+                        import/export, process list auto-refresh, custom alarm sounds.</p>
+                </div>
+                <div class="roadmap-item reveal stagger-3">
+                    <div class="version">v0.5.0 <span class="tag tag-planned">📋 Planned</span></div>
+                    <h3>Advanced Triggers</h3>
+                    <p>CPU idle trigger, timer/schedule triggers, process exit trigger, disk activity monitoring, ETW
+                        per-process network, composite conditions (AND/OR).</p>
+                </div>
+                <div class="roadmap-item reveal stagger-4">
+                    <div class="version">v0.8.0 <span class="tag tag-planned">📋 Planned</span></div>
+                    <h3>Extensibility & Platform</h3>
+                    <p>Plugin system for community triggers & actions, script execution, webhook actions, CLI headless
+                        mode, macOS support.</p>
+                </div>
+                <div class="roadmap-item reveal stagger-5">
+                    <div class="version">v1.0.0 <span class="tag tag-planned">📋 Planned</span></div>
+                    <h3>Stable Release</h3>
+                    <p>Signed binaries, auto-update, documentation site, accessibility audit, Linux support.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="cta-card reveal-scale">
+            <h2>Ready to automate your PC?</h2>
+            <p>Download FlowWatcher and never babysit a download again.</p>
+            <div class="hero-actions">
+                <a href="https://github.com/IamAshrafee/FlowWatcher/releases" class="btn-primary">↓ Download v0.1.0</a>
+                <a href="https://github.com/IamAshrafee/FlowWatcher" class="btn-secondary">⭐ Star on GitHub</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-links">
+            <a href="https://github.com/IamAshrafee/FlowWatcher">GitHub</a>
+            <a href="https://github.com/IamAshrafee/FlowWatcher/blob/main/ROADMAP.md">Roadmap</a>
+            <a href="https://github.com/IamAshrafee/FlowWatcher/blob/main/CONTRIBUTING.md">Contribute</a>
+            <a href="https://github.com/IamAshrafee/FlowWatcher/blob/main/LICENSE">MIT License</a>
+        </div>
+        <p>Built with ❤️ by <a href="https://github.com/IamAshrafee">Ashrafee</a> — Powered by Rust + React + Tauri</p>
+    </footer>
+
+    <script>
+        // Particles
+        (function () { const c = document.getElementById('particles'); for (let i = 0; i < 30; i++) { const p = document.createElement('div'); p.className = 'particle'; p.style.left = Math.random() * 100 + '%'; p.style.animationDuration = (8 + Math.random() * 12) + 's'; p.style.animationDelay = Math.random() * 10 + 's'; p.style.width = p.style.height = (1 + Math.random() * 2) + 'px'; c.appendChild(p) } })();
+
+        // Scroll reveal
+        const observer = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) } }) }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        document.querySelectorAll('.reveal,.reveal-left,.reveal-right,.reveal-scale').forEach(el => observer.observe(el));
+
+        // Nav scroll
+        window.addEventListener('scroll', () => { document.querySelector('nav').classList.toggle('scrolled', window.scrollY > 50) });
+
+        // Mobile menu
+        const hamburger = document.getElementById('hamburger');
+        const mobileMenu = document.getElementById('mobileMenu');
+        hamburger.addEventListener('click', () => { hamburger.classList.toggle('open'); mobileMenu.classList.toggle('open') });
+        function closeMobile() { hamburger.classList.remove('open'); mobileMenu.classList.remove('open') }
+
+        // Screenshots
+        function showScreenshots(tab, btn) {
+            document.querySelectorAll('.screenshot-pair').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.screenshot-tab').forEach(el => el.classList.remove('active'));
+            document.getElementById('screenshots-' + tab).classList.add('active');
+            btn.classList.add('active');
+            document.querySelectorAll('#screenshots-' + tab + ' .screenshot-frame').forEach((el, i) => {
+                el.style.animation = 'none'; el.offsetHeight;
+                el.style.animation = 'ssReveal 0.6s ease forwards';
+                el.style.animationDelay = (i * 0.15) + 's';
+            });
+        }
+    </script>
+</body>
+
+</html>
