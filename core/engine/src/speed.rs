@@ -207,20 +207,26 @@ mod tests {
         let mut monitor = SpeedMonitor::new("mock0", 3);
 
         let result = monitor.poll(&mut provider).unwrap();
-        assert!(result.is_none(), "first poll should return None (no baseline)");
+        assert!(
+            result.is_none(),
+            "first poll should return None (no baseline)"
+        );
     }
 
     #[test]
     fn speed_calculation_from_delta() {
         // Simulate: 0 bytes → 1024 bytes received in 1 second = 1024 B/s
         let mut provider = MockNetworkProvider::new(vec![
-            (0, 0),        // first poll (baseline)
-            (1024, 512),   // second poll
+            (0, 0),      // first poll (baseline)
+            (1024, 512), // second poll
         ]);
         let mut monitor = SpeedMonitor::new("mock0", 3);
 
         monitor.poll(&mut provider).unwrap(); // baseline
-        let reading = monitor.poll(&mut provider).unwrap().expect("should have reading");
+        let reading = monitor
+            .poll(&mut provider)
+            .unwrap()
+            .expect("should have reading");
 
         assert_eq!(reading.download_bps, 1024);
         assert_eq!(reading.upload_bps, 512);
@@ -231,9 +237,9 @@ mod tests {
         // 3 readings: 1000, 100, 1000 → average = 700
         let mut provider = MockNetworkProvider::new(vec![
             (0, 0),
-            (1000, 0),  // +1000 in 1s = 1000 bps
-            (1100, 0),  // +100 in 1s  = 100 bps
-            (2100, 0),  // +1000 in 1s = 1000 bps
+            (1000, 0), // +1000 in 1s = 1000 bps
+            (1100, 0), // +100 in 1s  = 100 bps
+            (2100, 0), // +1000 in 1s = 1000 bps
         ]);
         let mut monitor = SpeedMonitor::new("mock0", 3);
 
@@ -243,7 +249,10 @@ mod tests {
         monitor.poll(&mut provider).unwrap(); // 1000
 
         let avg = monitor.current_download_speed();
-        assert_eq!(avg, 700, "rolling average of [1000, 100, 1000] should be 700");
+        assert_eq!(
+            avg, 700,
+            "rolling average of [1000, 100, 1000] should be 700"
+        );
     }
 
     #[test]
@@ -251,9 +260,9 @@ mod tests {
         // Window size = 2, push 3 values → oldest is dropped
         let mut provider = MockNetworkProvider::new(vec![
             (0, 0),
-            (500, 0),   // +500
-            (1000, 0),  // +500
-            (3000, 0),  // +2000
+            (500, 0),  // +500
+            (1000, 0), // +500
+            (3000, 0), // +2000
         ]);
         let mut monitor = SpeedMonitor::new("mock0", 2); // window=2
 

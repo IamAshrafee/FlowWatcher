@@ -77,8 +77,7 @@ impl ThresholdCondition {
             MonitorMode::DownloadOnly => download < self.threshold_bytes_per_sec,
             MonitorMode::UploadOnly => upload < self.threshold_bytes_per_sec,
             MonitorMode::Both => {
-                download < self.threshold_bytes_per_sec
-                    && upload < self.threshold_bytes_per_sec
+                download < self.threshold_bytes_per_sec && upload < self.threshold_bytes_per_sec
             }
         };
 
@@ -155,7 +154,10 @@ mod tests {
         let data = speed_data(100_000, 0); // 100 KB/s — below threshold
         let result = cond.evaluate(&data).unwrap();
         // Should be InProgress with 0 elapsed (just started)
-        assert!(matches!(result, ConditionResult::InProgress { elapsed_secs: 0 }));
+        assert!(matches!(
+            result,
+            ConditionResult::InProgress { elapsed_secs: 0 }
+        ));
     }
 
     #[test]
@@ -173,7 +175,10 @@ mod tests {
 
         // Drop below again — timer should have reset
         let result = cond.evaluate(&low).unwrap();
-        assert!(matches!(result, ConditionResult::InProgress { elapsed_secs: 0 }));
+        assert!(matches!(
+            result,
+            ConditionResult::InProgress { elapsed_secs: 0 }
+        ));
     }
 
     #[test]

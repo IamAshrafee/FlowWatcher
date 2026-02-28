@@ -132,8 +132,7 @@ impl ActivityLogger {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
-        let json = serde_json::to_string_pretty(&self.entries)
-            .map_err(|e| e.to_string())?;
+        let json = serde_json::to_string_pretty(&self.entries).map_err(|e| e.to_string())?;
         std::fs::write(path, json).map_err(|e| e.to_string())
     }
 
@@ -143,8 +142,7 @@ impl ActivityLogger {
             return Ok(Self::new());
         }
         let data = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
-        let entries: Vec<LogEntry> =
-            serde_json::from_str(&data).map_err(|e| e.to_string())?;
+        let entries: Vec<LogEntry> = serde_json::from_str(&data).map_err(|e| e.to_string())?;
         // Cap at MAX_ENTRIES, keeping newest.
         let start = if entries.len() > MAX_ENTRIES {
             entries.len() - MAX_ENTRIES
@@ -250,7 +248,7 @@ fn days_to_date(mut days: u64) -> (u64, u64, u64) {
 }
 
 fn is_leap(y: u64) -> bool {
-    (y % 4 == 0 && y % 100 != 0) || y % 400 == 0
+    (y.is_multiple_of(4) && !y.is_multiple_of(100)) || y.is_multiple_of(400)
 }
 
 // ---------------------------------------------------------------------------
@@ -271,8 +269,18 @@ mod tests {
     #[test]
     fn add_and_retrieve_entries() {
         let mut logger = ActivityLogger::new();
-        logger.add_entry(LogEntry::now("Network idle", "Shutdown", LogStatus::Executed, None));
-        logger.add_entry(LogEntry::now("Process idle", "Lock Screen", LogStatus::Cancelled, Some("User cancelled".into())));
+        logger.add_entry(LogEntry::now(
+            "Network idle",
+            "Shutdown",
+            LogStatus::Executed,
+            None,
+        ));
+        logger.add_entry(LogEntry::now(
+            "Process idle",
+            "Lock Screen",
+            LogStatus::Cancelled,
+            Some("User cancelled".into()),
+        ));
 
         assert_eq!(logger.len(), 2);
         assert_eq!(logger.get_all()[0].trigger_reason, "Network idle");
@@ -298,8 +306,18 @@ mod tests {
     #[test]
     fn filter_entries() {
         let mut logger = ActivityLogger::new();
-        logger.add_entry(LogEntry::now("Network idle", "Shutdown", LogStatus::Executed, None));
-        logger.add_entry(LogEntry::now("Process idle", "Lock Screen", LogStatus::Cancelled, None));
+        logger.add_entry(LogEntry::now(
+            "Network idle",
+            "Shutdown",
+            LogStatus::Executed,
+            None,
+        ));
+        logger.add_entry(LogEntry::now(
+            "Process idle",
+            "Lock Screen",
+            LogStatus::Cancelled,
+            None,
+        ));
 
         let results = logger.get_filtered("network");
         assert_eq!(results.len(), 1);
@@ -326,7 +344,12 @@ mod tests {
     #[test]
     fn export_txt() {
         let mut logger = ActivityLogger::new();
-        logger.add_entry(LogEntry::now("Test", "Action", LogStatus::Info, Some("details".into())));
+        logger.add_entry(LogEntry::now(
+            "Test",
+            "Action",
+            LogStatus::Info,
+            Some("details".into()),
+        ));
         let txt = logger.export_txt();
         assert!(txt.contains("Test"));
         assert!(txt.contains("details"));

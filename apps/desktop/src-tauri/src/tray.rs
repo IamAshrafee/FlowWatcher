@@ -15,10 +15,20 @@ use tauri::{
 /// - Left-click: show and focus the main window
 pub fn setup_tray(app: &App) -> Result<(), Box<dyn std::error::Error>> {
     // ── Menu items ──
-    let start_monitoring =
-        MenuItem::with_id(app, "start_monitoring", "Start Monitoring", true, None::<&str>)?;
-    let stop_monitoring =
-        MenuItem::with_id(app, "stop_monitoring", "Stop Monitoring", true, None::<&str>)?;
+    let start_monitoring = MenuItem::with_id(
+        app,
+        "start_monitoring",
+        "Start Monitoring",
+        true,
+        None::<&str>,
+    )?;
+    let stop_monitoring = MenuItem::with_id(
+        app,
+        "stop_monitoring",
+        "Stop Monitoring",
+        true,
+        None::<&str>,
+    )?;
     let open_dashboard =
         MenuItem::with_id(app, "open_dashboard", "Open Dashboard", true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;

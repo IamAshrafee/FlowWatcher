@@ -135,7 +135,9 @@ mod tests {
 
         async fn execute(&self) -> Result<(), ActionError> {
             if self.should_fail_execute {
-                Err(ActionError::ExecutionFailed("mock execution failure".into()))
+                Err(ActionError::ExecutionFailed(
+                    "mock execution failure".into(),
+                ))
             } else {
                 Ok(())
             }

@@ -10,8 +10,8 @@
 //! They use the `windows-sys` crate for safe FFI bindings to Win32 APIs.
 //! All actions are guarded behind `validate()` checks.
 
-use flowwatcher_actions::{Action, ActionError, ActionInfo};
 use async_trait::async_trait;
+use flowwatcher_actions::{Action, ActionError, ActionInfo};
 use std::process::Command;
 
 // ---------------------------------------------------------------------------
@@ -305,11 +305,7 @@ mod tests {
         let original_len = ids.len();
         ids.sort();
         ids.dedup();
-        assert_eq!(
-            ids.len(),
-            original_len,
-            "some actions have duplicate IDs"
-        );
+        assert_eq!(ids.len(), original_len, "some actions have duplicate IDs");
     }
 
     #[test]
@@ -334,6 +330,9 @@ mod tests {
     #[tokio::test]
     async fn lock_screen_validates_successfully() {
         let action = LockScreenAction;
-        action.validate().await.expect("lock screen should validate");
+        action
+            .validate()
+            .await
+            .expect("lock screen should validate");
     }
 }

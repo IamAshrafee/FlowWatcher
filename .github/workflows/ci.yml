@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust-checks:
+    name: Rust Checks
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            core/target
+            apps/desktop/src-tauri/target
+          key: rust-${{ runner.os }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+          restore-keys: rust-${{ runner.os }}-
+
+      # ── Core workspace checks ──────────────────────────────
+      - name: "Core: cargo fmt"
+        working-directory: core
+        run: cargo fmt --all --check
+
+      - name: "Core: cargo clippy"
+        working-directory: core
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: "Core: cargo build"
+        working-directory: core
+        run: cargo build --all-targets
+
+      - name: "Core: cargo test"
+        working-directory: core
+        run: cargo test --all
+
+      # ── Tauri backend checks ───────────────────────────────
+      - name: "Tauri: cargo fmt"
+        working-directory: apps/desktop/src-tauri
+        run: cargo fmt --check
+
+      - name: "Tauri: cargo clippy"
+        working-directory: apps/desktop/src-tauri
+        run: cargo clippy -- -D warnings
+
+      - name: "Tauri: cargo check"
+        working-directory: apps/desktop/src-tauri
+        run: cargo check
+
+  frontend-checks:
+    name: Frontend Checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/desktop
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier format check
+        run: npm run format:check
+
+      - name: TypeScript + Vite build
+        run: npm run build
+
+  commitlint:
+    name: Commit Convention
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install commitlint
+        run: npm install --global @commitlint/cli @commitlint/config-conventional
+
+      - name: Validate commits
+        run: npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose

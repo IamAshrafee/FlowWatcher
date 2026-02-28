@@ -1,0 +1,93 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior in FlowWatcher
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the sections below so we can reproduce and fix it.
+
+  - type: input
+    id: version
+    attributes:
+      label: FlowWatcher Version
+      description: Which version are you using? (Check Settings > About)
+      placeholder: "e.g. 0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear description of what the bug is.
+      placeholder: Describe what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this bug?
+      placeholder: |
+        1. Open FlowWatcher
+        2. Go to ...
+        3. Click on ...
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Error Output
+      description: If applicable, paste any error messages or log output.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: If applicable, add screenshots to help explain the problem.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other information that might be relevant.
+    validations:
+      required: false

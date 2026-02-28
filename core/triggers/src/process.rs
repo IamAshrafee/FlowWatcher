@@ -47,8 +47,14 @@ impl ProcessTrigger {
         threshold_bytes: u64,
     ) -> Self {
         Self {
-            watched_names: watched_names.into_iter().map(|n| n.to_lowercase()).collect(),
-            excluded_names: excluded_names.into_iter().map(|n| n.to_lowercase()).collect(),
+            watched_names: watched_names
+                .into_iter()
+                .map(|n| n.to_lowercase())
+                .collect(),
+            excluded_names: excluded_names
+                .into_iter()
+                .map(|n| n.to_lowercase())
+                .collect(),
             threshold_bytes,
             started: false,
         }
@@ -246,11 +252,7 @@ mod tests {
 
     #[test]
     fn trigger_data_contains_metrics() {
-        let trigger = ProcessTrigger::new(
-            vec!["chrome.exe".to_string()],
-            vec![],
-            1000,
-        );
+        let trigger = ProcessTrigger::new(vec!["chrome.exe".to_string()], vec![], 1000);
         let result = trigger.evaluate_with_processes(&mock_processes()).unwrap();
         if let TriggerState::Active(data) = result {
             assert_eq!(data.get("watched_count"), Some(&TriggerValue::U64(1)));

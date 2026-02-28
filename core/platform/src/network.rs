@@ -160,7 +160,10 @@ mod tests {
         let provider = SysinfoNetworkProvider::new();
         let interfaces = provider.list_interfaces().expect("should list interfaces");
         // On any machine, there should be at least one interface.
-        assert!(!interfaces.is_empty(), "expected at least one network interface");
+        assert!(
+            !interfaces.is_empty(),
+            "expected at least one network interface"
+        );
     }
 
     #[test]

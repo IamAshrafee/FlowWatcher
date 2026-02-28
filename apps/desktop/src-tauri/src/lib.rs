@@ -26,7 +26,9 @@ pub fn run() {
                 let state = app.state::<AppState>();
                 if let Ok(dir) = app.path().app_data_dir() {
                     let log_path = dir.join("activity_logs.json");
-                    if let Ok(mut logger) = flowwatcher_engine::ActivityLogger::load_from_file(&log_path) {
+                    if let Ok(mut logger) =
+                        flowwatcher_engine::ActivityLogger::load_from_file(&log_path)
+                    {
                         // Enforce 30-day retention on load.
                         logger.prune_older_than(30);
                         *state.activity_logger.blocking_lock() = logger;

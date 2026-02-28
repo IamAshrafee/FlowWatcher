@@ -5,20 +5,21 @@
  * and applies the theme class to <html>.
  */
 
-import { create } from "zustand";
-import { createContext, useContext, useEffect, type ReactNode } from "react";
+/* eslint-disable react-refresh/only-export-components */
+import { create } from 'zustand';
+import { createContext, useContext, useEffect, type ReactNode } from 'react';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type Theme = "dark" | "light" | "auto";
-type ResolvedTheme = "dark" | "light";
+export type Theme = 'dark' | 'light' | 'auto';
+type ResolvedTheme = 'dark' | 'light';
 
 interface ThemeState {
-    theme: Theme;
-    resolved: ResolvedTheme;
-    setTheme: (theme: Theme) => void;
+  theme: Theme;
+  resolved: ResolvedTheme;
+  setTheme: (theme: Theme) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -26,24 +27,22 @@ interface ThemeState {
 // ---------------------------------------------------------------------------
 
 function getSystemTheme(): ResolvedTheme {
-    if (typeof window === "undefined") return "dark";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
+  if (typeof window === 'undefined') return 'dark';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 function resolveTheme(theme: Theme): ResolvedTheme {
-    return theme === "auto" ? getSystemTheme() : theme;
+  return theme === 'auto' ? getSystemTheme() : theme;
 }
 
 const useThemeStore = create<ThemeState>((set) => ({
-    theme: "dark",
-    resolved: "dark",
-    setTheme: (theme) =>
-        set({
-            theme,
-            resolved: resolveTheme(theme),
-        }),
+  theme: 'dark',
+  resolved: 'dark',
+  setTheme: (theme) =>
+    set({
+      theme,
+      resolved: resolveTheme(theme),
+    }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -53,9 +52,9 @@ const useThemeStore = create<ThemeState>((set) => ({
 const ThemeContext = createContext<ThemeState | null>(null);
 
 export function useTheme() {
-    const ctx = useContext(ThemeContext);
-    if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
-    return ctx;
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
+  return ctx;
 }
 
 // ---------------------------------------------------------------------------
@@ -63,40 +62,35 @@ export function useTheme() {
 // ---------------------------------------------------------------------------
 
 interface ThemeProviderProps {
-    children: ReactNode;
-    defaultTheme?: Theme;
+  children: ReactNode;
+  defaultTheme?: Theme;
 }
 
-export function ThemeProvider({
-    children,
-    defaultTheme = "dark",
-}: ThemeProviderProps) {
-    const store = useThemeStore();
+export function ThemeProvider({ children, defaultTheme = 'dark' }: ThemeProviderProps) {
+  const store = useThemeStore();
 
-    // Initialize on mount.
-    useEffect(() => {
-        store.setTheme(defaultTheme);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+  // Initialize on mount.
+  useEffect(() => {
+    store.setTheme(defaultTheme);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    // Apply theme class to <html>.
-    useEffect(() => {
-        const root = document.documentElement;
-        root.classList.remove("dark", "light");
-        root.classList.add(store.resolved);
-    }, [store.resolved]);
+  // Apply theme class to <html>.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('dark', 'light');
+    root.classList.add(store.resolved);
+  }, [store.resolved]);
 
-    // Listen for OS theme changes when in "auto" mode.
-    useEffect(() => {
-        if (store.theme !== "auto") return;
+  // Listen for OS theme changes when in "auto" mode.
+  useEffect(() => {
+    if (store.theme !== 'auto') return;
 
-        const media = window.matchMedia("(prefers-color-scheme: dark)");
-        const handler = () => store.setTheme("auto");
-        media.addEventListener("change", handler);
-        return () => media.removeEventListener("change", handler);
-    }, [store.theme, store]);
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => store.setTheme('auto');
+    media.addEventListener('change', handler);
+    return () => media.removeEventListener('change', handler);
+  }, [store.theme, store]);
 
-    return (
-        <ThemeContext.Provider value={store}>{children}</ThemeContext.Provider>
-    );
+  return <ThemeContext.Provider value={store}>{children}</ThemeContext.Provider>;
 }

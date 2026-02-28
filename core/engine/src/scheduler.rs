@@ -312,7 +312,9 @@ mod tests {
         assert_eq!(scheduler.state(), SchedulerState::Cancelled);
 
         let events = scheduler.take_events();
-        assert!(events.iter().any(|e| matches!(e, SchedulerEvent::Cancelled)));
+        assert!(events
+            .iter()
+            .any(|e| matches!(e, SchedulerEvent::Cancelled)));
     }
 
     #[test]
@@ -361,7 +363,9 @@ mod tests {
         let mut scheduler = ActionScheduler::new(60, 30);
         scheduler.schedule().unwrap();
         scheduler.cancel().unwrap();
-        scheduler.schedule().expect("should reschedule after cancel");
+        scheduler
+            .schedule()
+            .expect("should reschedule after cancel");
         assert_eq!(scheduler.state(), SchedulerState::Pending);
     }
 }

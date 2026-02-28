@@ -1,6 +1,6 @@
-import { ThemeProvider } from "./components/ThemeProvider";
-import { AppShell, type TabId } from "./components/AppShell";
-import { DashboardPage, AdvancedPage, LogsPage, SettingsPage } from "./pages";
+import { ThemeProvider } from './components/ThemeProvider';
+import { AppShell, type TabId } from './components/AppShell';
+import { DashboardPage, AdvancedPage, LogsPage, SettingsPage } from './pages';
 
 function App() {
   return (
@@ -8,13 +8,13 @@ function App() {
       <AppShell>
         {(activeTab: TabId) => {
           switch (activeTab) {
-            case "dashboard":
+            case 'dashboard':
               return <DashboardPage />;
-            case "advanced":
+            case 'advanced':
               return <AdvancedPage />;
-            case "logs":
+            case 'logs':
               return <LogsPage />;
-            case "settings":
+            case 'settings':
               return <SettingsPage />;
           }
         }}

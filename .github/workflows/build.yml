@@ -1,0 +1,59 @@
+name: Tauri Build
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry & build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/src-tauri/target
+          key: tauri-build-${{ runner.os }}-${{ hashFiles('**/Cargo.lock', '**/Cargo.toml') }}
+          restore-keys: tauri-build-${{ runner.os }}-
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: apps/desktop
+        run: npm ci
+
+      - name: Build Tauri app
+        working-directory: apps/desktop
+        run: npx tauri build
+
+      - name: Upload MSI installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: flowwatcher-windows-msi
+          path: apps/desktop/src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: warn
+
+      - name: Upload NSIS installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: flowwatcher-windows-nsis
+          path: apps/desktop/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: warn

@@ -1,8 +1,6 @@
 //! Tauri command handlers — the bridge between frontend and core engine.
 
-use crate::state::{
-    AppState, MonitoringConfig, MonitoringStatus, TriggerConfig,
-};
+use crate::state::{AppState, MonitoringConfig, MonitoringStatus, TriggerConfig};
 use flowwatcher_actions::ActionInfo;
 use flowwatcher_conditions::{MonitorMode, ThresholdCondition};
 use flowwatcher_engine::SpeedMonitor;
@@ -181,9 +179,7 @@ pub async fn resume_monitoring(state: State<'_, AppState>) -> Result<(), String>
 
 /// Get current monitoring status.
 #[tauri::command]
-pub async fn get_monitoring_status(
-    state: State<'_, AppState>,
-) -> Result<MonitoringStatus, String> {
+pub async fn get_monitoring_status(state: State<'_, AppState>) -> Result<MonitoringStatus, String> {
     Ok(state.status.lock().await.clone())
 }
 
@@ -219,9 +215,7 @@ pub async fn execute_action_now(state: State<'_, AppState>) -> Result<(), String
 
 /// Get running processes sorted by network usage.
 #[tauri::command]
-pub async fn get_running_processes(
-    state: State<'_, AppState>,
-) -> Result<Vec<ProcessInfo>, String> {
+pub async fn get_running_processes(state: State<'_, AppState>) -> Result<Vec<ProcessInfo>, String> {
     let mut provider = state.process_provider.lock().await;
     provider.get_suggestions(10).map_err(|e| e.to_string())
 }
@@ -376,10 +370,7 @@ pub async fn save_settings(
     app: tauri::AppHandle,
     settings: serde_json::Value,
 ) -> Result<(), String> {
-    let dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?;
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
 
     // Ensure directory exists.
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
@@ -410,19 +401,14 @@ pub async fn reset_settings(app: tauri::AppHandle) -> Result<(), String> {
 
 /// Update whether the window close button should minimize to tray.
 #[tauri::command]
-pub async fn set_close_to_tray(
-    state: State<'_, AppState>,
-    enabled: bool,
-) -> Result<(), String> {
+pub async fn set_close_to_tray(state: State<'_, AppState>, enabled: bool) -> Result<(), String> {
     *state.close_to_tray.lock().await = enabled;
     Ok(())
 }
 
 /// Get the current close-to-tray preference.
 #[tauri::command]
-pub async fn get_close_to_tray(
-    state: State<'_, AppState>,
-) -> Result<bool, String> {
+pub async fn get_close_to_tray(state: State<'_, AppState>) -> Result<bool, String> {
     Ok(*state.close_to_tray.lock().await)
 }
 
@@ -442,10 +428,7 @@ pub struct TriggerInfo {
 ///
 /// Uses Windows `SetThreadExecutionState` to prevent display/system sleep.
 #[tauri::command]
-pub async fn set_keep_screen_on(
-    state: State<'_, AppState>,
-    enabled: bool,
-) -> Result<(), String> {
+pub async fn set_keep_screen_on(state: State<'_, AppState>, enabled: bool) -> Result<(), String> {
     *state.keep_screen_on.lock().await = enabled;
 
     #[cfg(windows)]
@@ -457,9 +440,7 @@ pub async fn set_keep_screen_on(
 
         unsafe {
             if enabled {
-                SetThreadExecutionState(
-                    ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED,
-                );
+                SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED);
             } else {
                 SetThreadExecutionState(ES_CONTINUOUS);
             }
@@ -471,9 +452,7 @@ pub async fn set_keep_screen_on(
 
 /// Get the current keep-screen-on preference.
 #[tauri::command]
-pub async fn get_keep_screen_on(
-    state: State<'_, AppState>,
-) -> Result<bool, String> {
+pub async fn get_keep_screen_on(state: State<'_, AppState>) -> Result<bool, String> {
     Ok(*state.keep_screen_on.lock().await)
 }
 
@@ -499,10 +478,7 @@ pub async fn export_config(app: tauri::AppHandle) -> Result<String, String> {
 
 /// Import settings from a JSON string.
 #[tauri::command]
-pub async fn import_config(
-    app: tauri::AppHandle,
-    config_json: String,
-) -> Result<(), String> {
+pub async fn import_config(app: tauri::AppHandle, config_json: String) -> Result<(), String> {
     // Validate the JSON first.
     let _: serde_json::Value =
         serde_json::from_str(&config_json).map_err(|e| format!("Invalid JSON: {e}"))?;
