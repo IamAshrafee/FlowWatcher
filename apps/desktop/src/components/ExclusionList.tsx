@@ -89,16 +89,15 @@ export function ExclusionList() {
 
             {/* Excluded items */}
             {excludedProcesses.length === 0 ? (
-                <p
-                    className="rounded-lg p-3 text-center text-xs"
+                <div
+                    className="flex h-full flex-col items-center justify-center space-y-3 rounded-lg border-2 border-dashed p-6 text-center"
                     style={{
-                        color: "var(--color-text-muted)",
-                        backgroundColor: "var(--color-base)",
-                        border: "1px solid var(--color-border-subtle)",
+                        borderColor: "var(--color-border-default)",
+                        backgroundColor: "var(--color-bg-base)",
                     }}
                 >
                     {t("exclusionList.emptyState")}
-                </p>
+                </div>
             ) : (
                 <div
                     className="flex flex-wrap gap-2"

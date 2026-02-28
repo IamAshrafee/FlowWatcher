@@ -158,17 +158,14 @@ export function AppShell({ children }: AppShellProps) {
 
     return (
         <div
-            className="flex h-screen flex-col"
-            style={{ backgroundColor: "var(--color-base)" }}
+            className="flex h-screen w-full flex-col overflow-hidden"
+            style={{ backgroundColor: "var(--color-bg-base)" }}
         >
             {/* Header */}
             <header
-                className="flex items-center justify-between px-5 py-3"
+                className="flex shrink-0 items-center justify-between px-5 py-3"
                 style={{
                     borderBottom: "1px solid var(--color-border-subtle)",
-                    /* Tauri: allow window drag on titlebar area */
-                    // @ts-expect-error Tauri-specific CSS property
-                    WebkitAppRegion: "drag",
                 }}
             >
                 <div className="flex items-center gap-3">
@@ -181,19 +178,14 @@ export function AppShell({ children }: AppShellProps) {
                     <StatusBadge status={monitoringStatus.status} />
                 </div>
 
-                <div
-                    style={{
-                        // @ts-expect-error Tauri: buttons should not be draggable
-                        WebkitAppRegion: "no-drag",
-                    }}
-                >
+                <div>
                     <PillTabs activeTab={activeTab} onTabChange={setActiveTab} />
                 </div>
             </header>
 
             {/* Content */}
             <main
-                className="flex-1 overflow-y-auto p-5 animate-fade-in"
+                className="flex-1 min-h-0 overflow-y-auto p-5 animate-fade-in"
                 key={activeTab}
             >
                 <div className="mx-auto max-w-3xl">{children(activeTab)}</div>
